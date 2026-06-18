@@ -1,0 +1,92 @@
+/* Application shell: the top bar (tabs + status) and the active-view host. Per-view layouts
+   live in each view's own stylesheet and fill `.view-content`. */
+
+.app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.topbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.topbar-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.topbar-sep {
+    width: 1px;
+    align-self: stretch;
+    margin: 2px 6px;
+    background: var(--border);
+}
+
+.topbar-nav button {
+    font: inherit;
+    font-family: var(--heading);
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 4px 12px;
+}
+.topbar-nav button:hover {
+    border-color: var(--border);
+}
+.topbar-nav button.active {
+    color: var(--accent);
+    background: var(--accent-bg);
+    border-color: var(--accent-border);
+}
+
+.topbar-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+}
+
+.topbar-status .proc {
+    color: var(--text);
+}
+
+.topbar-status .badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+.topbar-status .badge.up {
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.4);
+    background: rgba(16, 185, 129, 0.12);
+}
+
+/* Hosts the active view plus the scan pop-down, which overlays the view (positioned against
+   this box) rather than displacing it. */
+.view-host {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+}
+
+.view-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+}

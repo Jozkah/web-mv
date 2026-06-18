@@ -1,0 +1,143 @@
+/* Shared panel vocabulary: the framed panel, its head, the body region that hosts a
+   list/editor with status overlays layered on top, and the list/row primitives. Uses the
+   design tokens from index.css. Per-view layout (pane sizing, the workspace grid) and
+   view-specific controls live in each view's own stylesheet. */
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg);
+}
+
+.panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--heading);
+    flex: 0 0 auto;
+}
+
+.panel-head h2 {
+    font-size: 16px;
+    margin: 0;
+}
+
+.panel-head .meta {
+    flex: 1 1 auto;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.panel-head .meta .warn {
+    color: #d97706;
+}
+
+.panel-head button {
+    flex: 0 0 auto;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--accent);
+    background: var(--accent-bg);
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 2px 8px;
+}
+.panel-head button:hover {
+    border-color: var(--accent-border);
+}
+.panel-head button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* Body region whose children (a list / an editor host) fill it, with status messages
+   layered on top as overlays. Position context for `.overlay`. */
+.panel-body {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+}
+
+.panel-status {
+    padding: 12px;
+    font-size: 14px;
+    color: var(--text);
+}
+.panel-status.error {
+    color: crimson;
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    text-align: center;
+}
+
+/* Lists + rows ------------------------------------------------------------ */
+
+.list {
+    overflow: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 4px 12px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.4;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    color: var(--text-h);
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+.row:hover {
+    background: var(--social-bg);
+}
+.row.selected {
+    background: var(--accent-bg);
+    box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.row .addr {
+    color: var(--accent);
+}
+.row .grow {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.row .dim {
+    color: var(--text);
+    flex: 0 0 auto;
+}
+.row .method {
+    opacity: 0.85;
+}
+.row .mod {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

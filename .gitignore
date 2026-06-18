@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Build output
+frontend/dist/
+release/
+*.bun-build
+
+# OS / editor cruft
+.DS_Store
+*.log
+
+# Local working notes, not for publishing
+HANDOFF.md

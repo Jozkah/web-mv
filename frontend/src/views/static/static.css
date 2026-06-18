@@ -1,0 +1,173 @@
+/* Static-analysis view layout and its view-specific controls. The shared panel/list/row vocabulary
+   lives in ui/panels.css; this file only adds the three-pane workspace, pane sizing, the
+   sort/search bars, the function-row controls, and the disassembly host. */
+
+.workspace {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    box-sizing: border-box;
+}
+
+.rail {
+    flex: 0 0 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+}
+
+.rail .panel-modules {
+    flex: 2 1 0;
+}
+.rail .panel-pinned {
+    flex: 1 1 0;
+}
+.panel-functions {
+    /* Width is content-derived inline (see FunctionList); these just bound it. */
+    flex: 0 0 auto;
+    min-width: 320px;
+    max-width: 720px;
+}
+.panel-disasm {
+    flex: 1 1 auto;
+}
+
+/* Sort bar ---------------------------------------------------------------- */
+
+.sortbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+    flex: 0 0 auto;
+    font-family: var(--mono);
+    font-size: 12px;
+}
+
+.sortbar-label {
+    color: var(--text);
+    margin-right: 2px;
+}
+
+.sortbar button {
+    font: inherit;
+    cursor: pointer;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 8px;
+}
+
+.sortbar button:hover {
+    border-color: var(--accent-border);
+}
+
+.sortbar button.active {
+    color: var(--accent);
+    background: var(--accent-bg);
+    border-color: var(--accent-border);
+}
+
+/* Search bar -------------------------------------------------------------- */
+
+.searchbar {
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+    flex: 0 0 auto;
+}
+
+.search {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-h);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 4px 8px;
+}
+
+.search:focus {
+    outline: none;
+    border-color: var(--accent-border);
+}
+
+/* Function rows ----------------------------------------------------------- */
+
+/* A row is a grid sharing one template (set on the list via --fn-cols) so the columns align
+   into a table. Cells fill the row height and are divided by thin splitters, so the name and
+   address sit in fixed lanes instead of drifting apart across a flexed gap. */
+.fn-row {
+    display: grid;
+    grid-template-columns: var(--fn-cols, auto minmax(0, 1fr) auto auto);
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+}
+.fn-row > * {
+    padding: 0 12px;
+    line-height: 28px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.fn-row > .pin {
+    padding: 0 6px 0 12px;
+    line-height: 28px;
+}
+/* Splitters before each fixed column (the name lane has none - it opens straight off the pin). */
+.fn-row > .addr,
+.fn-row > .dim {
+    border-left: 1px solid var(--border);
+}
+.fn-row > .dim {
+    text-align: right;
+}
+
+/* Function-row controls --------------------------------------------------- */
+
+.pin {
+    flex: 0 0 auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-size: 13px;
+    line-height: 1;
+    color: var(--text);
+}
+.pin.active {
+    color: var(--accent);
+}
+.fn-name.custom {
+    color: var(--accent);
+}
+.rename {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 13px;
+    box-sizing: border-box;
+    border: 1px solid var(--accent-border);
+    border-radius: 3px;
+    background: var(--bg);
+    color: var(--text-h);
+    padding: 0 4px;
+    min-width: 0;
+}
+.rename:focus {
+    outline: none;
+}
+
+/* Disassembly host -------------------------------------------------------- */
+
+.disasm-host {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}

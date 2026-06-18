@@ -1,0 +1,211 @@
+/* The scan pop-down: a card anchored under the top bar (Sig Scan / String Scan), over a
+   click-away backdrop. Reuses the shared panel/list/row vocabulary; only the card-specific
+   controls and result grouping live here. */
+
+.scan-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+}
+
+.scan-popdown {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 11;
+    width: 460px;
+    max-width: calc(100% - 16px);
+}
+
+.scan-card {
+    max-height: min(70vh, 640px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.scan-controls {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.scan-input {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 13px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    color: var(--text-h);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+
+.scan-options {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--text);
+}
+
+.scan-field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.scan-field.check {
+    cursor: pointer;
+}
+.scan-num {
+    width: 48px;
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12px;
+    box-sizing: border-box;
+    padding: 3px 6px;
+    color: var(--text-h);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+}
+.scan-num:focus {
+    outline: none;
+    border-color: var(--accent-border);
+}
+/* Custom checkbox: accent-filled box with a darker tick drawn on top, so the checkmark
+   colour is independent of the box fill (native accent-color can't separate the two). */
+.scan-field.check input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    cursor: pointer;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+}
+.scan-field.check input[type="checkbox"]:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+.scan-field.check input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 3px;
+    height: 7px;
+    border: solid #4a1a73;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* Searchable module dropdown -------------------------------------------------
+   A themed replacement for a bare <select>: a button that opens a pop-over with
+   a search box over the shared row/list vocabulary. */
+.module-picker {
+    position: relative;
+}
+
+.module-picker-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 200px;
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    color: var(--text-h);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 4px 8px;
+}
+.module-picker-button:hover,
+.module-picker-button.open {
+    border-color: var(--accent-border);
+}
+.module-picker-button.placeholder {
+    color: var(--text);
+}
+.module-picker-button .grow {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.module-picker-button .caret {
+    flex: 0 0 auto;
+    color: var(--text);
+}
+
+/* Rendered in a Portal at the document root and anchored to the button via inline
+   top/left, so the scan card's overflow clip can't trap it. */
+.module-picker-pop {
+    position: fixed;
+    z-index: 30;
+    width: 280px;
+    max-width: 70vw;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+.module-picker-pop .search {
+    margin: 8px;
+    width: calc(100% - 16px);
+    box-sizing: border-box;
+}
+.module-options {
+    max-height: 240px;
+}
+
+.scan-warn {
+    margin: 0;
+    font-size: 13px;
+    color: #d97706;
+}
+
+/* Results: one group per pattern, hit rows beneath each group head. */
+.scan-results {
+    display: block;
+}
+
+.scan-group-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    background: var(--social-bg);
+    border-bottom: 1px solid var(--border);
+}
+.scan-group-head.error {
+    color: crimson;
+}
+
+.scan-hit {
+    cursor: default;
+}
+.scan-hit button {
+    flex: 0 0 auto;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--accent);
+    background: var(--accent-bg);
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 1px 8px;
+}
+.scan-hit button:hover {
+    border-color: var(--accent-border);
+}

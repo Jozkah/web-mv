@@ -1,0 +1,291 @@
+import { For, Show, createMemo, createSignal } from "solid-js";
+import { useApp } from "../../../app/AppContext";
+import { useStatic } from "../state/StaticContext";
+import { parseHex, rvaOf } from "../../../state/address";
+import { Panel } from "../../../ui/Panel";
+import { RenameInput } from "../../../ui/RenameInput";
+import { StatusOverlay } from "../../../ui/StatusOverlay";
+import { createListVirtualizer } from "../../../ui/virtualList";
+
+const ROW_HEIGHT = 28;
+
+// Exact text measurement so column lanes fit their content to the pixel - `ch` units only
+// approximate the real advance and leave the text a hair too wide, tripping the ellipsis.
+const ROW_FONT = '13px ui-monospace, Consolas, "Courier New", monospace';
+let measureCtx: CanvasRenderingContext2D | null = null;
+function textWidth(s: string): number {
+    if (!measureCtx) measureCtx = document.createElement("canvas").getContext("2d");
+    if (!measureCtx) return s.length * 8; // canvas unavailable (SSR/old): rough fallback
+    measureCtx.font = ROW_FONT;
+    return measureCtx.measureText(s).width;
+}
+
+type SortKey = "address" | "size";
+
+// Middle panel: functions for the selected module, served from the cache (instant on
+// re-select). Pinned functions float to the top; double-click a name to rename; the star
+// toggles a pin; the sort bar orders by address, size, or scan type.
+//
+// The scroll container is mounted unconditionally (states are overlays) so the virtualizer
+// always has a scroll element to observe; gating it behind the loading/error <Show> would
+// mount the virtualizer with no element and render nothing.
+
+export function FunctionList() {
+    const { modules, annotations } = useApp();
+    const { functions, selection, selectFunction } = useStatic();
+
+    const moduleName = () => selection.selectedModule();
+    const entry = () => {
+        const m = moduleName();
+        return m ? functions.get(m) : undefined;
+    };
+    const errorMsg = () => {
+        const e = entry();
+        return e?.status === "error" ? e.error : undefined;
+    };
+
+    const [sortKey, setSortKey] = createSignal<SortKey>("address");
+    const [sortAsc, setSortAsc] = createSignal(true);
+    const toggleSort = (key: SortKey) => {
+        if (sortKey() === key) setSortAsc((asc) => !asc);
+        else {
+            setSortKey(key);
+            setSortAsc(true);
+        }
+    };
+    const sortArrow = (key: SortKey) => (sortKey() !== key ? "" : sortAsc() ? "▲" : "▼");
+
+    const [query, setQuery] = createSignal("");
+
+    // Function rows: enriched with RVA, filtered by the search query, sorted by the chosen
+    // key, pinned ones floated to the top. Recomputes when the cached list, the search, the
+    // sort, or a pin changes.
+    const rows = createMemo(() => {
+        const m = moduleName();
+        const e = m ? functions.get(m) : undefined;
+        if (!m || e?.status !== "ready") return [];
+        const base = modules.baseOf(m);
+        if (!base) return [];
+
+        const byAddress = (a: string, b: string) => {
+            const x = parseHex(a);
+            const y = parseHex(b);
+            return x < y ? -1 : x > y ? 1 : 0;
+        };
+        const mapped = e.data.map((f) => ({
+            address: f.address,
+            size: f.size,
+            rva: rvaOf(base, f.address),
+        }));
+
+        // Substring match on the display name (sub_<rva> or a rename) or the address.
+        const q = query().trim().toLowerCase();
+        const filtered = q
+            ? mapped.filter(
+                  (f) =>
+                      f.address.toLowerCase().includes(q) ||
+                      annotations.nameOf(m, f.rva).toLowerCase().includes(q),
+              )
+            : mapped;
+
+        const key = sortKey();
+        const dir = sortAsc() ? 1 : -1;
+        filtered.sort((a, b) => {
+            const primary = key === "size" ? a.size - b.size : byAddress(a.address, b.address);
+            // Stable tie-break on address so equal sizes stay ordered.
+            return (primary || byAddress(a.address, b.address)) * dir;
+        });
+
+        const pinnedRvas = new Set(
+            annotations.pinned().filter((a) => a.module === m).map((a) => a.rva),
+        );
+        return [
+            ...filtered.filter((f) => pinnedRvas.has(f.rva)),
+            ...filtered.filter((f) => !pinnedRvas.has(f.rva)),
+        ];
+    });
+
+    // Widest rendered text per column (in px), measured over the whole module list - not the
+    // filtered rows, so searching doesn't reshuffle the layout. Drives the shared grid template
+    // (every row uses the same one, so the columns line up into a table) and the pane width.
+    const NAME_MAX = 360; // cap a runaway rename so it can't blow the pane out
+    const columns = createMemo(() => {
+        const m = moduleName();
+        const e = m ? functions.get(m) : undefined;
+        const base = m ? modules.baseOf(m) : undefined;
+        if (!m || e?.status !== "ready" || !base) return undefined;
+
+        let name = 0;
+        let addr = 0;
+        let size = 0;
+        for (const f of e.data) {
+            name = Math.max(name, textWidth(annotations.nameOf(m, rvaOf(base, f.address))));
+            addr = Math.max(addr, textWidth(f.address));
+            size = Math.max(size, textWidth(`${f.size}B`));
+        }
+        return {
+            name: Math.min(Math.ceil(name), NAME_MAX),
+            addr: Math.ceil(addr),
+            size: Math.ceil(size),
+        };
+    });
+
+    // Each lane = its text width + the cell's 24px side padding + 1px splitter (divided lanes) +
+    // 2px slack so the ellipsis never trips. A trailing spacer absorbs any leftover width (e.g. the
+    // pane's min-width on a tiny module) at the right edge, never mid-row.
+    const PAD = 26; // 24px padding + 2px slack
+    const PIN = 32; // star + its padding
+    const lane = (px: number, border = 0) => `${px + PAD + border}px`;
+    const gridTemplate = createMemo(() => {
+        const c = columns();
+        return c
+            ? `auto ${lane(c.name)} ${lane(c.addr, 1)} ${lane(c.size, 1)} minmax(0, 1fr)`
+            : undefined;
+    });
+
+    // Pane width = the sum of every lane plus the pin, so it matches the grid's intrinsic width and
+    // the spacer collapses to ~0. CSS min/max-width bounds it.
+    const contentWidth = createMemo(() => {
+        const c = columns();
+        if (!c) return undefined;
+        const total = c.name + c.addr + c.size + PAD * 3 + 2 + PIN;
+        return `${total}px`;
+    });
+
+    const { setRef, virtualizer } = createListVirtualizer(() => rows().length, ROW_HEIGHT);
+
+    const [editing, setEditing] = createSignal<string | null>(null); // rva under rename
+    const commitRename = (module: string, rva: string, value: string) => {
+        annotations.rename(module, rva, value);
+        setEditing(null);
+    };
+
+    return (
+        <Panel
+            class="panel-functions"
+            style={contentWidth() ? { flex: "0 0 auto", width: contentWidth() } : undefined}
+            title="functions"
+            meta={
+                <Show when={moduleName()} fallback="none">
+                    {(m) => (
+                        <>
+                            {m()}
+                            <Show when={entry()?.status === "ready"}> · {rows().length}</Show>
+                        </>
+                    )}
+                </Show>
+            }
+            actions={
+                <button
+                    onClick={() => {
+                        const m = moduleName();
+                        if (m) functions.refresh(m);
+                    }}
+                    disabled={moduleName() === null || entry()?.status === "loading"}
+                >
+                    refresh
+                </button>
+            }
+        >
+            <div class="sortbar">
+                <span class="sortbar-label">sort</span>
+                <button classList={{ active: sortKey() === "address" }} onClick={() => toggleSort("address")}>
+                    addr {sortArrow("address")}
+                </button>
+                <button classList={{ active: sortKey() === "size" }} onClick={() => toggleSort("size")}>
+                    size {sortArrow("size")}
+                </button>
+            </div>
+
+            <div class="searchbar">
+                <input
+                    class="search"
+                    type="text"
+                    placeholder="search name or address"
+                    value={query()}
+                    onInput={(e) => setQuery(e.currentTarget.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Escape") setQuery("");
+                    }}
+                />
+            </div>
+
+            <div class="panel-body">
+                <div ref={setRef} class="list" style={{ "--fn-cols": gridTemplate() ?? "" }}>
+                    <div style={{ height: `${virtualizer.getTotalSize()}px`, position: "relative", width: "100%" }}>
+                        <For each={virtualizer.getVirtualItems()}>
+                            {(item) => {
+                                const m = moduleName()!;
+                                const fn = () => rows()[item.index];
+                                const rva = () => fn().rva;
+                                const pinned = () => annotations.isPinned(m, rva());
+                                const selected = () => {
+                                    const sel = selection.selectedFunction();
+                                    return sel?.module === m && sel?.address === fn().address;
+                                };
+                                return (
+                                    <div
+                                        class="row fn-row"
+                                        classList={{ selected: selected() }}
+                                        style={{
+                                            position: "absolute",
+                                            top: 0,
+                                            left: 0,
+                                            width: "100%",
+                                            height: `${item.size}px`,
+                                            transform: `translateY(${item.start}px)`,
+                                        }}
+                                        onClick={() => selectFunction(m, fn())}
+                                    >
+                                        <button
+                                            class="pin"
+                                            classList={{ active: pinned() }}
+                                            title={pinned() ? "unpin" : "pin"}
+                                            onClick={(ev) => {
+                                                ev.stopPropagation();
+                                                annotations.togglePin(m, rva());
+                                            }}
+                                        >
+                                            {pinned() ? "★" : "☆"}
+                                        </button>
+                                        <Show
+                                            when={editing() === rva()}
+                                            fallback={
+                                                <span
+                                                    class="grow fn-name"
+                                                    title="double-click to rename"
+                                                    classList={{ custom: annotations.hasCustomName(m, rva()) }}
+                                                    onDblClick={(ev) => {
+                                                        ev.stopPropagation();
+                                                        setEditing(rva());
+                                                    }}
+                                                >
+                                                    {annotations.nameOf(m, rva())}
+                                                </span>
+                                            }
+                                        >
+                                            <RenameInput
+                                                class="grow rename"
+                                                value={annotations.nameOf(m, rva())}
+                                                onCommit={(value) => commitRename(m, rva(), value)}
+                                                onCancel={() => setEditing(null)}
+                                            />
+                                        </Show>
+                                        <span class="addr">{fn().address}</span>
+                                        <span class="dim">{fn().size}B</span>
+                                    </div>
+                                );
+                            }}
+                        </For>
+                    </div>
+                </div>
+
+                <StatusOverlay message={moduleName() === null && "select a module to view its functions"} />
+                <StatusOverlay
+                    message={moduleName() !== null && entry()?.status === "loading" && "enumerating…"}
+                />
+                <StatusOverlay message={errorMsg()} error />
+            </div>
+        </Panel>
+    );
+}
