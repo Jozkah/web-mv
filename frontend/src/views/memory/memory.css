@@ -1,0 +1,627 @@
+/* Memory viewer layout: class sidebar + main (address bar, node grid, footer), and the
+   node table vocabulary (typed badges, live-value highlighting, pointer/RTTI decoration).
+   Reuses the shared tokens and the `.list` / `.overlay` primitives. */
+
+.memory-view {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    box-sizing: border-box;
+}
+
+/* Class sidebar ----------------------------------------------------------- */
+
+.class-sidebar {
+    flex: 0 0 200px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-right: 1px solid var(--border);
+}
+
+.sidebar-head {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+}
+
+.sidebar-add,
+.class-edit,
+.class-del {
+    font: inherit;
+    cursor: pointer;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 0 6px;
+    line-height: 1.4;
+    transition: color 0.12s ease, border-color 0.12s ease;
+}
+.sidebar-add:hover,
+.class-edit:hover,
+.class-del:hover {
+    border-color: var(--accent-border);
+    color: var(--accent);
+}
+
+.class-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-h);
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background-color 0.12s ease;
+}
+.class-row:hover {
+    background: var(--social-bg);
+}
+.class-row.selected {
+    background: var(--accent-bg);
+    box-shadow: inset 2px 0 0 var(--accent);
+}
+.class-row .grow {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.class-edit,
+.class-del {
+    visibility: hidden;
+}
+.class-row:hover .class-edit,
+.class-row:hover .class-del,
+.class-row.selected .class-edit {
+    visibility: visible;
+}
+
+/* Inline class rename (double-click a name); matches the node/function rename inputs. */
+.class-rename {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 13px;
+    box-sizing: border-box;
+    border: 1px solid var(--accent-border);
+    border-radius: 3px;
+    background: var(--bg);
+    color: var(--text-h);
+    padding: 0 4px;
+    min-width: 0;
+}
+.class-rename:focus {
+    outline: none;
+}
+
+/* Main column ------------------------------------------------------------- */
+
+.memory-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.address-bar {
+    flex: 0 0 auto;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+}
+.address-label {
+    font-family: var(--heading);
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+.address-input-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.address-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--text-h);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.address-input:focus {
+    outline: none;
+    border-color: var(--accent-border);
+    box-shadow: 0 0 0 3px var(--accent-bg);
+}
+/* Node grid --------------------------------------------------------------- */
+
+.memory-body {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+}
+
+.node-grid {
+    /* hex is a firm 200px so a full 8-byte row never clips; name + value are the minmax(0,...)
+       tracks that shrink to fit the container, keeping the actions cell (✕) on-screen. */
+    --node-cols: 64px 116px 200px minmax(0, 180px) 96px minmax(0, 1fr) 28px;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.node-head,
+.node-row {
+    display: grid;
+    grid-template-columns: var(--node-cols);
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px;
+}
+
+.node-head {
+    flex: 0 0 auto;
+    height: 32px;
+    background: var(--social-bg);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--heading);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text);
+}
+
+.node-row {
+    height: 100%;
+    font-family: var(--mono);
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background-color 0.12s ease;
+}
+.node-row:hover {
+    background: var(--social-bg);
+}
+.node-row.selected {
+    background: var(--accent-bg);
+    box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.col-offset {
+    color: var(--text);
+}
+.col-address {
+    color: var(--accent); /* addresses are accent-colored everywhere else on the site */
+}
+.col-hex {
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+.col-name {
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.col-name.named {
+    color: var(--accent);
+}
+/* Value cell is a flex row: the decoded value / pointer preview shrinks (and ellipsizes),
+   but the RTTI class tag is pinned so it stays visible instead of being clipped off-right. */
+.col-value {
+    color: var(--text-h);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.value-text {
+    flex: 1 1 auto; /* grow so the class tag + follow button pin to the right edge */
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.col-value .changed {
+    background: rgba(234, 179, 8, 0.35);
+    color: var(--text-h);
+    border-radius: 2px;
+}
+
+.ptr-arrow {
+    color: var(--text);
+    margin: 0 8px;
+}
+.ptr-preview {
+    color: var(--text);
+}
+.class-tag {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 12px;
+    line-height: 1;
+    color: var(--accent);
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-border);
+}
+
+/* Follow-pointer pill on pointer rows: spawns a new class at the target and switches to it.
+   Sits just right of the decoded value, before the RTTI class tag. Kept visible (not hover-
+   gated) so the action is discoverable; fills accent on hover. */
+/* Distinct teal so the action reads separately from the purple RTTI class tag beside it;
+   same box metrics as .class-tag (font/padding/border/radius) so the two sit at equal height. */
+.ptr-follow {
+    --fc: #14b8a6;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    color: color-mix(in srgb, var(--fc) 82%, var(--text-h));
+    background: color-mix(in srgb, var(--fc) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--fc) 45%, transparent);
+    border-radius: 5px;
+    padding: 2px 8px;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.ptr-follow:hover {
+    border-color: color-mix(in srgb, var(--fc) 75%, transparent);
+    color: var(--fc);
+}
+.ptr-follow:active {
+    transform: translateY(1px);
+}
+
+.node-delete {
+    visibility: hidden;
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    color: var(--text);
+    background: transparent;
+    border: none;
+    padding: 0;
+    transition: color 0.12s ease;
+}
+.node-row:hover .node-delete {
+    visibility: visible;
+}
+.node-delete:hover {
+    color: crimson;
+}
+
+/* Inline rename input (matches the function-list rename). */
+.col-name.rename {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 13px;
+    box-sizing: border-box;
+    border: 1px solid var(--accent-border);
+    border-radius: 3px;
+    background: var(--bg);
+    color: var(--text-h);
+    padding: 0 4px;
+    min-width: 0;
+}
+.col-name.rename:focus {
+    outline: none;
+}
+
+/* Type picker (a themed badge button + Portal pop-over) -------------------- */
+
+.type-picker {
+    display: inline-flex;
+}
+
+/* Each category sets one hue; the chip derives its tint, border, and text from it so the
+   badge and the pop-over rows share one recipe. Flat, like the rest of the site - a faint
+   tinted fill with a thin border that brightens on hover (the panel/scan button pattern). */
+.type-fill {
+    --type-color: var(--text);
+}
+.type-int {
+    --type-color: #3b82f6;
+}
+.type-uint {
+    --type-color: #06b6d4;
+}
+.type-float {
+    --type-color: #10b981;
+}
+.type-bool {
+    --type-color: #f59e0b;
+}
+.type-pointer {
+    --type-color: #a855f7;
+}
+.type-string {
+    --type-color: #ec4899;
+}
+/* wstring shares the string category (and so .type-string) but gets its own hue via the
+   per-id class, which is emitted after the category class and wins on source order. */
+.type-wstring {
+    --type-color: #f43f5e;
+}
+
+.type-badge {
+    --c: var(--type-color, var(--text));
+    appearance: none;
+    -webkit-appearance: none;
+    box-sizing: border-box;
+    width: 74px; /* fixed so every type chip is the same width regardless of label length */
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    color: color-mix(in srgb, var(--c) 82%, var(--text-h));
+    background: color-mix(in srgb, var(--c) 13%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c) 28%, transparent);
+    border-radius: 5px;
+    padding: 4px 9px;
+    transition: border-color 0.12s ease, background 0.12s ease;
+}
+.type-badge:hover {
+    background: color-mix(in srgb, var(--c) 18%, transparent);
+    border-color: color-mix(in srgb, var(--c) 55%, transparent);
+}
+.type-badge.open {
+    background: color-mix(in srgb, var(--c) 20%, transparent);
+    border-color: var(--c);
+}
+.type-fill.type-badge {
+    color: var(--text); /* untyped stays quiet - no value yet, so it shouldn't draw the eye */
+}
+
+/* Pop-over matches the other Portal dropdowns (module picker): panel + soft drop shadow. */
+.type-picker-pop {
+    position: fixed;
+    z-index: 50;
+    width: 144px;
+    padding: 6px;
+    box-sizing: border-box;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+.type-picker-pop .type-options {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    overflow: visible; /* fixed 12-type list - override .list's overflow:auto so no scrollbar */
+}
+/* Pop-over rows reuse the chip recipe, stacked and full-width for picking. The node menu's
+   "Change Type" submenu (.node-submenu) reuses the same rows, so it shares these selectors. */
+.type-picker-pop .row,
+.node-submenu .row {
+    --c: var(--type-color, var(--text));
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    color: color-mix(in srgb, var(--c) 82%, var(--text-h));
+    background: color-mix(in srgb, var(--c) 11%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c) 22%, transparent);
+    border-radius: 5px;
+    padding: 4px 10px;
+    transition: border-color 0.1s ease, background 0.1s ease;
+}
+.type-picker-pop .row:hover,
+.node-submenu .row:hover {
+    background: color-mix(in srgb, var(--c) 18%, transparent);
+    border-color: color-mix(in srgb, var(--c) 55%, transparent);
+}
+.type-picker-pop .row.selected {
+    background: color-mix(in srgb, var(--c) 20%, transparent);
+    border-color: var(--c);
+    box-shadow: inset 2px 0 0 var(--c);
+}
+
+/* Footer ------------------------------------------------------------------ */
+
+.memory-footer {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+}
+
+/* Right-click node menu (Portal-positioned at the cursor) ------------------ */
+/* ReClass shape: a flat list of items, the top ones flying a submenu out to the side on hover.
+   Submenus are CSS-hover driven (no per-item open state); `.node-menu.flip` swings them to the
+   left when the cursor is near the right edge. */
+
+.node-menu {
+    position: fixed;
+    z-index: 60;
+    width: 220px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: visible; /* override .panel's clip so the fly-out submenus aren't cut off */
+}
+
+/* Items are <button> (leaf actions) and <div> (submenu parents); the shared class keeps them
+   visually identical. Parents lay out as a row so the ▸ arrow pins to the right edge. */
+.node-menu-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text-h);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 5px 9px;
+    transition: background 0.1s ease, border-color 0.1s ease, color 0.1s ease;
+}
+.node-menu-item:hover {
+    background: var(--social-bg);
+    border-color: var(--accent-border);
+}
+.node-menu-item:disabled {
+    color: var(--text);
+    opacity: 0.45;
+    cursor: default;
+    background: transparent;
+    border-color: transparent;
+}
+.node-menu-item.danger:hover {
+    color: crimson;
+    border-color: crimson;
+}
+.node-menu-sep {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+}
+
+.submenu-arrow {
+    margin-left: auto;
+    padding-left: 10px;
+    font-size: 10px;
+    color: var(--text);
+}
+
+/* The fly-out. Hidden until its parent item is hovered, then anchored just past the menu's right
+   edge (or left edge under .flip). The negative top lines its first item up with the parent; the
+   horizontal overlap (no gap) keeps the pointer inside the hover region while crossing over. */
+.node-submenu {
+    position: absolute;
+    z-index: 61;
+    top: -7px;
+    left: 100%;
+    margin-left: 3px;
+    display: none;
+    flex-direction: column;
+    gap: 3px;
+    width: 168px;
+    padding: 6px;
+    box-sizing: border-box;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+.node-menu-item.has-submenu:hover > .node-submenu {
+    display: flex;
+}
+/* Transparent bridge across the gap between the item and its fly-out, so a diagonal mouse move
+   into the submenu never crosses a dead zone that drops the hover and closes it. */
+.node-submenu::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -8px;
+    width: 8px;
+}
+.node-menu.flip .node-submenu {
+    left: auto;
+    right: 100%;
+    margin-left: 0;
+    margin-right: 3px;
+}
+.node-menu.flip .node-submenu::before {
+    left: auto;
+    right: -8px;
+}
+/* The Change Type submenu reuses the type-picker rows (.type-options + .row.type-*); the chip
+   styling already lives in the .type-picker-pop rules above and keys only off those classes. */
+
+.node-submenu-item {
+    text-align: left;
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text-h);
+    background: var(--social-bg);
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 4px 9px;
+    transition: background 0.1s ease, border-color 0.1s ease;
+}
+.node-submenu-item:hover {
+    border-color: var(--accent-border);
+}
+
+/* Custom-amount row at the bottom of the Add / Insert submenus. */
+.node-submenu-custom {
+    display: flex;
+    gap: 4px;
+    margin-top: 2px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+}
+.bytes-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12px;
+    box-sizing: border-box;
+    color: var(--text-h);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 3px 6px;
+}
+.bytes-input:focus {
+    outline: none;
+    border-color: var(--accent-border);
+}
+.bytes-go {
+    flex: 0 0 auto;
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--accent);
+    background: var(--accent-bg);
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 3px 8px;
+    transition: border-color 0.1s ease;
+}
+.bytes-go:hover {
+    border-color: var(--accent-border);
+}
