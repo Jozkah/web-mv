@@ -1,0 +1,292 @@
+/* Strings view: a full-page IDA-style string enumeration table. Reuses the shared
+   panel/list/row vocabulary and adds the table-specific columns, progress bar, and
+   type badges. */
+
+.strings-view {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 8px;
+}
+
+.strings-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+/* Controls bar — module picker, min-length, encoding filter, search */
+.strings-controls {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.strings-controls-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--text);
+}
+
+.strings-field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.strings-num {
+    width: 52px;
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12px;
+    box-sizing: border-box;
+    padding: 3px 6px;
+    color: var(--text-h);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+}
+.strings-num:focus {
+    outline: none;
+    border-color: var(--accent-border);
+}
+
+.strings-select {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 3px 6px;
+    color: var(--text-h);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+}
+.strings-select:focus {
+    outline: none;
+    border-color: var(--accent-border);
+}
+
+.strings-pills {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.strings-pill {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    color: var(--text);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 120ms;
+}
+.strings-pill:hover {
+    border-color: var(--accent-border);
+    color: var(--text-h);
+}
+.strings-pill.active {
+    color: var(--accent);
+    background: var(--accent-bg);
+    border-color: var(--accent-border);
+}
+
+.strings-export-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.strings-export-btn {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    color: var(--accent);
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-border);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 120ms;
+}
+.strings-export-btn:hover {
+    background: rgba(170, 59, 255, 0.25);
+}
+
+.strings-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.strings-search {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 13px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    color: var(--text-h);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+.strings-search:focus {
+    outline: none;
+    border-color: var(--accent-border);
+}
+
+.strings-warn {
+    margin: 0;
+    font-size: 13px;
+    color: #d97706;
+}
+
+/* Progress bar */
+.strings-progress-track {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--code-bg);
+    overflow: hidden;
+}
+
+.strings-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-border));
+    transition: width 120ms ease-out;
+    animation: strings-progress-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes strings-progress-glow {
+    0%, 100% { opacity: 0.85; }
+    50% { opacity: 1; }
+}
+
+/* Table layout */
+.strings-table-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.strings-thead {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text);
+    background: var(--social-bg);
+    border-bottom: 1px solid var(--border);
+    user-select: none;
+    flex: 0 0 auto;
+}
+
+.strings-thead .strings-col {
+    cursor: pointer;
+    padding: 6px 12px;
+    transition: color 120ms;
+}
+.strings-thead .strings-col:hover {
+    color: var(--accent);
+}
+
+.strings-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+/* Row */
+.strings-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.4;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    color: var(--text-h);
+    white-space: nowrap;
+    box-sizing: border-box;
+    transition: background 80ms;
+}
+.strings-row:hover {
+    background: var(--social-bg);
+}
+
+/* Columns */
+.strings-col {
+    padding: 4px 12px;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.strings-col-addr {
+    flex: 0 0 180px;
+    color: var(--accent);
+}
+.strings-col-len {
+    flex: 0 0 72px;
+    text-align: right;
+    color: var(--text);
+}
+.strings-col-type {
+    flex: 0 0 56px;
+    text-align: center;
+}
+.strings-col-value {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Type badge */
+.strings-type-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 18px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+.strings-type-badge.ascii {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.strings-type-badge.utf16 {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Responsive: collapse address column on small screens */
+@media (max-width: 700px) {
+    .strings-col-addr {
+        flex: 0 0 130px;
+    }
+    .strings-col-len {
+        flex: 0 0 50px;
+    }
+}

@@ -1,14 +1,14 @@
 import { For, Show, createSignal } from "solid-js";
 import { useApp } from "../app/AppContext";
 import { useMemory } from "../views/memory/state/MemoryContext";
-import { resolveRelative, sigScanIda, stringScan } from "../protocol/requests";
+import { resolveRelative, sigScanIda } from "../protocol/requests";
 import { StatusOverlay } from "../ui/StatusOverlay";
 import { errorText } from "../state/errors";
 import { ModulePicker } from "./ModulePicker";
 
-// The pop-down scan card, shared by Signature scan and String scan. One pattern per scan.
-// Signature scan forwards an IDA pattern string to sig_scan_ida (the agent parses it). Both
-// take an optional module scope and a find-all toggle (default off: first hit only).
+// The pop-down signature scan card. Forwards an IDA pattern string to sig_scan_ida
+// (the agent parses it), with an optional module scope and a find-all toggle (default
+// off: first hit only).
 //
 // A sig-scan hit can either spawn a class at the hit itself ("create class") or follow a
 // RIP-relative reference inside the matched bytes ("follow ref"): for a `mov rax, [rip+disp]`
@@ -16,7 +16,7 @@ import { ModulePicker } from "./ModulePicker";
 // and we open the class there. The two byte fields default to that common case and are
 // editable for other instruction shapes (e.g. `E8` call = offset 1, len 5).
 
-export type ScanKind = "sig" | "string";
+export type ScanKind = "sig";
 
 type Result =
     | { status: "idle" }
@@ -45,12 +45,7 @@ export function ScanCard(props: { kind: ScanKind; onClose: () => void }) {
     const canScan = () => attached() && scope() !== "" && hasInput() && !scanning();
 
     function exec(): Promise<string[]> {
-        const module = scope();
-        const find_all = findAll();
-        if (props.kind === "string") {
-            return stringScan(client, { text: pattern(), module, find_all }).then((r) => r.results);
-        }
-        return sigScanIda(client, { pattern: pattern().trim(), module, find_all }).then((r) => r.results);
+        return sigScanIda(client, { pattern: pattern().trim(), module: scope(), find_all: findAll() }).then((r) => r.results);
     }
 
     const scan = async () => {
@@ -89,7 +84,21 @@ export function ScanCard(props: { kind: ScanKind; onClose: () => void }) {
         }
     };
 
-    const title = () => (props.kind === "sig" ? "Signature scan" : "String scan");
+    const wildcardDisp = () => {
+        const raw = pattern().trim();
+        if (!raw) return;
+        const tokens = raw.split(/\s+/);
+        const offset = relOffset();
+        const len = 4; // disp32 is 4 bytes
+        if (offset >= 0 && offset + len <= tokens.length) {
+            for (let i = offset; i < offset + len; i++) {
+                tokens[i] = "??";
+            }
+            setPattern(tokens.join(" "));
+        }
+    };
+
+    const title = () => "Signature scan";
 
     const overlayMessage = (): string | false => {
         const r = result();
@@ -127,7 +136,7 @@ export function ScanCard(props: { kind: ScanKind; onClose: () => void }) {
                 <input
                     class="scan-input"
                     type="text"
-                    placeholder={props.kind === "string" ? "de_cache" : "48 8B ?? ?? E8"}
+                    placeholder={"48 8B ?? ?? E8"}
                     value={pattern()}
                     onInput={(e) => setPattern(e.currentTarget.value)}
                     onKeyDown={(e) => e.key === "Enter" && scan()}
@@ -147,7 +156,6 @@ export function ScanCard(props: { kind: ScanKind; onClose: () => void }) {
                         find all matches
                     </label>
 
-                    <Show when={props.kind === "sig"}>
                         <label class="scan-field" title="byte offset of the disp32 inside the matched instruction">
                             byte offset
                             <input
@@ -168,7 +176,14 @@ export function ScanCard(props: { kind: ScanKind; onClose: () => void }) {
                                 onInput={(e) => setInstLen(Math.max(0, e.currentTarget.valueAsNumber || 0))}
                             />
                         </label>
-                    </Show>
+                        <button
+                            type="button"
+                            style={{ font: "inherit", "font-size": "12px", cursor: "pointer", padding: "2px 8px" }}
+                            title="replace 4 bytes at offset with ??"
+                            onClick={wildcardDisp}
+                        >
+                            wildcard disp32
+                        </button>
                 </div>
 
                 <Show when={!attached()}>
@@ -187,14 +202,12 @@ export function ScanCard(props: { kind: ScanKind; onClose: () => void }) {
                             <div class="row scan-hit">
                                 <span class="addr grow">{address}</span>
                                 <button onClick={() => createClass(address)}>create class</button>
-                                <Show when={props.kind === "sig"}>
-                                    <button
-                                        title="follow the RIP-relative reference here and create a class at its target"
-                                        onClick={() => followToClass(address)}
-                                    >
-                                        follow ref
-                                    </button>
-                                </Show>
+                                <button
+                                    title="follow the RIP-relative reference here and create a class at its target"
+                                    onClick={() => followToClass(address)}
+                                >
+                                    follow ref
+                                </button>
                             </div>
                         )}
                     </For>

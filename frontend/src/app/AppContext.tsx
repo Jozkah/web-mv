@@ -23,7 +23,7 @@ import { config } from "../config";
 // that pop down from the top bar over whichever destination is active. activeView lives
 // here (not as a Shell-local signal) so a scan result's "create class" / "jump to function"
 // action can switch the active view programmatically.
-export type ViewId = "memory" | "static";
+export type ViewId = "memory" | "static" | "strings";
 
 function createAppState() {
     const client = new AxClient(config.relayUrl);
@@ -53,6 +53,15 @@ function createAppState() {
     const pid = createMemo(() => pingData()?.pid);
     const base = createMemo(() => (pingData()?.attached ? pingData()?.base : undefined));
 
+    // How many RPC callers (VSCode chats) are currently active, polled from the relay's
+    // /status endpoint. The top bar surfaces this so a shared session shows its own fan-out.
+    const statusPoll = createPoll(
+        () => fetch(config.statusUrl).then((r) => r.json() as Promise<{ agents: number }>),
+        config.pingIntervalMs,
+        relayOpen,
+    );
+    const activeAgents = createMemo(() => statusPoll.data()?.agents ?? 0);
+
     // The module list follows the attached base: load it when a process is present, reload
     // it when the base changes (re-attach / new process), drop it when the agent detaches.
     // Views hang their own address-keyed cache resets off `base` the same way.
@@ -67,6 +76,7 @@ function createAppState() {
         client,
         relayStatus,
         pingData,
+        activeAgents,
         attached,
         pid,
         base,

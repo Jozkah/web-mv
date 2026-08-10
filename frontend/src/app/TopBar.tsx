@@ -10,17 +10,20 @@ import type { ScanKind } from "../scan/ScanCard";
 const VIEWS: ReadonlyArray<{ id: ViewId; label: string }> = [
     { id: "memory", label: "Memory viewer" },
     { id: "static", label: "Modules" },
+    { id: "strings", label: "Strings" },
 ];
 
 const CARDS: ReadonlyArray<{ kind: ScanKind; label: string }> = [
     { kind: "sig", label: "Signature scan" },
-    { kind: "string", label: "String scan" },
 ];
 
 export function TopBar(props: { openCard: ScanKind | null; onToggleCard: (kind: ScanKind) => void }) {
     const app = useApp();
     const moduleCount = () => app.modules.list().length;
     const agentUp = () => app.pingData() !== undefined;
+    // Once more than one RPC caller (chat) is active, the badge shows the count instead of a
+    // plain up/down - a solo session still reads as "agent: up".
+    const agentCount = () => app.activeAgents();
 
     return (
         <header class="topbar">
@@ -64,7 +67,12 @@ export function TopBar(props: { openCard: ScanKind | null; onToggleCard: (kind: 
                     server: {app.relayStatus()}
                 </span>
                 <span class="badge" classList={{ up: agentUp() }}>
-                    agent: {agentUp() ? "up" : "down"}
+                    <Show
+                        when={agentCount() > 1}
+                        fallback={<>agent: {agentUp() ? "up" : "down"}</>}
+                    >
+                        agents: {agentCount()}
+                    </Show>
                 </span>
             </div>
         </header>
