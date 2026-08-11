@@ -25,7 +25,7 @@ export function TopBar(props: { sigScanOpen: boolean; onToggleSigScan: () => voi
                 <button
                     title="Generate unique IDA signature pattern for function"
                     onClick={() => {
-                        app.setActiveView("static");
+                        ws.openOrFocusView("static");
                     }}
                 >
                     ⚡ SigMaker

@@ -131,10 +131,15 @@ export function analyzeInstruction(
                 immLen = Math.max(1, Math.ceil((rawVal.length - 2) / 2));
             }
             immLen = Math.min(immLen, 4);
-            for (let i = Math.max(0, len - immLen); i < len; i++) {
-                if (!analyzed[i].isWildcard) {
-                    analyzed[i].isWildcard = true;
-                    analyzed[i].reason = "Immediate value";
+            // Never wildcard more bytes than are available after the opcode;
+            // preserve at least the first byte (the opcode).
+            immLen = Math.min(immLen, len - 1);
+            if (immLen > 0) {
+                for (let i = Math.max(0, len - immLen); i < len; i++) {
+                    if (!analyzed[i].isWildcard) {
+                        analyzed[i].isWildcard = true;
+                        analyzed[i].reason = "Immediate value";
+                    }
                 }
             }
         }

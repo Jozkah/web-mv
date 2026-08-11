@@ -55,7 +55,7 @@ export function DisassemblyView() {
 
     const title = () => {
         const fn = selection.selectedFunction();
-        return fn ? annotations.nameOf(fn.module, fn.rva) : null;
+        return fn?.module && fn?.rva ? annotations.nameOf(fn.module, fn.rva) : null;
     };
 
     return (

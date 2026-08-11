@@ -43,9 +43,9 @@ export function HistoryView() {
             switch (item.type) {
                 case "function":
                     return (
-                        item.module.toLowerCase().includes(q) ||
-                        item.address.toLowerCase().includes(q) ||
-                        item.rva.toLowerCase().includes(q) ||
+                        (item.module && item.module.toLowerCase().includes(q)) ||
+                        (item.address && item.address.toLowerCase().includes(q)) ||
+                        (item.rva && item.rva.toLowerCase().includes(q)) ||
                         (item.name && item.name.toLowerCase().includes(q))
                     );
                 case "scan":
@@ -220,11 +220,11 @@ function SwitchItemDetails(props: { item: HistoryItem }) {
             return (
                 <>
                     <div class="history-item-title">
-                        <span>{item.name || `sub_${item.rva}`}</span>
+                        <span>{item.name || (item.rva ? `sub_${item.rva}` : (item.address || "function"))}</span>
                         <span class="history-tag">{item.module}</span>
                     </div>
                     <div class="history-item-subtitle">
-                        Address: {item.address} (RVA: +0x{item.rva})
+                        Address: {item.address || "unknown"}{item.rva ? ` (RVA: +0x${item.rva})` : ""}
                     </div>
                 </>
             );

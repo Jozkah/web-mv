@@ -147,9 +147,13 @@ export function ScanCard(props: { kind: ScanKind; onClose: () => void }) {
         if (!raw) return;
         const tokens = raw.split(/\s+/);
         const offset = relOffset();
-        const len = 4;
-        if (offset >= 0 && offset + len <= tokens.length) {
-            for (let i = offset; i < offset + len; i++) {
+        const iLen = instLen();
+        const dispLen = 4;
+        // Only wildcard within the bounds of the first instruction (instLen tokens).
+        // If the pattern is shorter than instLen, use the full pattern length as boundary.
+        const boundary = Math.min(iLen, tokens.length);
+        if (offset >= 0 && offset + dispLen <= boundary) {
+            for (let i = offset; i < offset + dispLen; i++) {
                 tokens[i] = "??";
             }
             setPattern(tokens.join(" "));

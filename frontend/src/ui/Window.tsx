@@ -159,14 +159,15 @@ export function Window(props: WindowProps) {
                     </div>
                 </header>
 
-                <Show when={!isMinimized()}>
-                    <div class="ui-window-body">{props.children}</div>
-                    <div
-                        class="ui-window-resize-handle"
-                        title="Drag to resize"
-                        onMouseDown={handleResizeMouseDown}
-                    />
-                </Show>
+                <div class="ui-window-body" style={{ display: isMinimized() ? "none" : "flex" }}>
+                    {props.children}
+                </div>
+                <div
+                    class="ui-window-resize-handle"
+                    title="Drag to resize"
+                    style={{ display: isMinimized() ? "none" : undefined }}
+                    onMouseDown={handleResizeMouseDown}
+                />
             </div>
         </Portal>
     );

@@ -73,7 +73,7 @@ function createStaticState() {
     // Resolve a pending pin target once its module's functions are cached.
     createEffect(() => {
         const pending = selection.pendingRva();
-        if (!pending) return;
+        if (!pending || !pending.module || !pending.rva) return;
 
         const entry = functions.get(pending.module);
         if (entry?.status !== "ready") return; // wait for the enumerate to land (or error)

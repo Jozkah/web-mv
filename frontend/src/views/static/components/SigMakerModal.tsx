@@ -27,7 +27,7 @@ export function SigMakerModal(props: SigMakerModalProps) {
 
     const [options, setOptions] = createSignal<SigOptions>({ ...DEFAULT_SIG_OPTIONS });
     const [mode, setMode] = createSignal<"auto" | "prologue" | "range">("auto");
-    const [startIndex] = createSignal(props.initialStartIndex ?? 0);
+    const [startIndex, setStartIndex] = createSignal(props.initialStartIndex ?? 0);
     const [rangeLength, setRangeLength] = createSignal(6);
     const [activeFormat, setActiveFormat] = createSignal<SigFormat>("ida");
     const [copied, setCopied] = createSignal(false);
@@ -262,6 +262,18 @@ export function SigMakerModal(props: SigMakerModalProps) {
                                         max="30"
                                         value={rangeLength()}
                                         onInput={(e) => setRangeLength(Math.max(1, e.currentTarget.valueAsNumber || 1))}
+                                    />
+                                </label>
+                            </Show>
+                            <Show when={mode() === "range"}>
+                                <label class="sigmaker-range-label">
+                                    Start inst:
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max={Math.max(0, props.instructions.length - 1)}
+                                        value={startIndex()}
+                                        onInput={(e) => setStartIndex(Math.max(0, Math.min(props.instructions.length - 1, e.currentTarget.valueAsNumber || 0)))}
                                     />
                                 </label>
                             </Show>

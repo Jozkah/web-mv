@@ -106,7 +106,11 @@ function readFrameId(message: string | Buffer): number | undefined {
  * Otherwise forward to all connected browser UI clients.
  */
 function routeAgentFrame(message: string | Buffer): void {
-    if (rpcPending.size > 0 && frameByteLength(message) <= RPC_MAX_REPLY_BYTES) {
+    // Always check for pending RPC replies by frame ID when there are outstanding requests.
+    // The size check is only a fast-path: if a frame is large and has no matching RPC id,
+    // it's a UI-lane result. Previously, oversized RPC replies would skip id-matching entirely,
+    // causing the HTTP caller to hang and UI tabs to receive unexpected frames.
+    if (rpcPending.size > 0) {
         const id = readFrameId(message);
         if (id !== undefined && id >= RPC_ID_BASE) {
             const p = rpcPending.get(id);

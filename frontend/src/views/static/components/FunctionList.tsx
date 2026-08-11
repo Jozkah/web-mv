@@ -367,77 +367,87 @@ export function FunctionList() {
                         <div style={{ height: `${virtualizer.getTotalSize()}px`, position: "relative", width: "100%" }}>
                             <For each={virtualizer.getVirtualItems()}>
                                 {(item) => {
-                                    const m = moduleName()!;
+                                    const m = moduleName();
                                     const fn = () => rows()[item.index];
-                                    const rva = () => fn().rva;
-                                    const pinned = () => annotations.isPinned(m, rva());
+                                    const rva = () => fn()?.rva ?? "";
+                                    const pinned = () => (m && rva() ? annotations.isPinned(m, rva()) : false);
                                     const selected = () => {
                                         const sel = selection.selectedFunction();
-                                        return sel?.module === m && sel?.address === fn().address;
+                                        const current = fn();
+                                        return !!(sel && m && current && sel.module === m && sel.address === current.address);
                                     };
-                                    const sigHit = () => sigMap().get(fn().address);
+                                    const sigHit = () => {
+                                        const current = fn();
+                                        return current ? sigMap().get(current.address) : undefined;
+                                    };
 
                                     return (
-                                        <div
-                                            class="row fn-row"
-                                            classList={{ selected: selected() }}
-                                            style={{
-                                                position: "absolute",
-                                                top: 0,
-                                                left: 0,
-                                                width: "100%",
-                                                height: `${item.size}px`,
-                                                transform: `translateY(${item.start}px)`,
-                                            }}
-                                            onClick={() => selectFunction(m, fn())}
-                                        >
-                                            <button
-                                                class="pin"
-                                                classList={{ active: pinned() }}
-                                                title={pinned() ? "unpin" : "pin"}
-                                                onClick={(ev) => {
-                                                    ev.stopPropagation();
-                                                    annotations.togglePin(m, rva());
+                                        <Show when={fn() && m}>
+                                            <div
+                                                class="row fn-row"
+                                                classList={{ selected: selected() }}
+                                                style={{
+                                                    position: "absolute",
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: "100%",
+                                                    height: `${item.size}px`,
+                                                    transform: `translateY(${item.start}px)`,
+                                                }}
+                                                onClick={() => {
+                                                    const current = fn();
+                                                    if (m && current) selectFunction(m, current);
                                                 }}
                                             >
-                                                {pinned() ? "★" : "☆"}
-                                            </button>
-                                            <Show
-                                                when={editing() === rva()}
-                                                fallback={
-                                                    <span
-                                                        class="grow fn-name"
-                                                        title="double-click to rename"
-                                                        classList={{ custom: annotations.hasCustomName(m, rva()) }}
-                                                        onDblClick={(ev) => {
-                                                            ev.stopPropagation();
-                                                            setEditing(rva());
-                                                        }}
-                                                    >
-                                                        {annotations.nameOf(m, rva())}
-                                                        <Show when={searchMode() === "sig" && sigHit()}>
-                                                            {(hit) => (
-                                                                <span
-                                                                    class="fn-sig-tag"
-                                                                    classList={{ prologue: hit().isPrologue }}
-                                                                >
-                                                                    {hit().isPrologue ? "PROLOGUE" : `+0x${hit().offset?.toString(16)}`}
-                                                                </span>
-                                                            )}
-                                                        </Show>
-                                                    </span>
-                                                }
-                                            >
-                                                <RenameInput
-                                                    class="grow rename"
-                                                    value={annotations.nameOf(m, rva())}
-                                                    onCommit={(value) => commitRename(m, rva(), value)}
-                                                    onCancel={() => setEditing(null)}
-                                                />
-                                            </Show>
-                                            <span class="addr">{fn().address}</span>
-                                            <span class="dim">{fn().size}B</span>
-                                        </div>
+                                                <button
+                                                    class="pin"
+                                                    classList={{ active: pinned() }}
+                                                    title={pinned() ? "unpin" : "pin"}
+                                                    onClick={(ev) => {
+                                                        ev.stopPropagation();
+                                                        const current = fn();
+                                                        if (m && current) annotations.togglePin(m, current.rva);
+                                                    }}
+                                                >
+                                                    {pinned() ? "★" : "☆"}
+                                                </button>
+                                                <Show
+                                                    when={editing() === rva()}
+                                                    fallback={
+                                                        <span
+                                                            class="grow fn-name"
+                                                            title="double-click to rename"
+                                                            classList={{ custom: annotations.hasCustomName(m!, rva()) }}
+                                                            onDblClick={(ev) => {
+                                                                ev.stopPropagation();
+                                                                if (rva()) setEditing(rva());
+                                                            }}
+                                                        >
+                                                            {annotations.nameOf(m!, rva())}
+                                                            <Show when={searchMode() === "sig" && sigHit()}>
+                                                                {(hit) => (
+                                                                    <span
+                                                                        class="fn-sig-tag"
+                                                                        classList={{ prologue: hit().isPrologue }}
+                                                                    >
+                                                                        {hit().isPrologue ? "PROLOGUE" : `+0x${hit().offset?.toString(16)}`}
+                                                                    </span>
+                                                                )}
+                                                            </Show>
+                                                        </span>
+                                                    }
+                                                >
+                                                    <RenameInput
+                                                        class="grow rename"
+                                                        value={annotations.nameOf(m!, rva())}
+                                                        onCommit={(value) => commitRename(m!, rva(), value)}
+                                                        onCancel={() => setEditing(null)}
+                                                    />
+                                                </Show>
+                                                <span class="addr">{fn()?.address}</span>
+                                                <span class="dim">{fn()?.size}B</span>
+                                            </div>
+                                        </Show>
                                     );
                                 }}
                             </For>

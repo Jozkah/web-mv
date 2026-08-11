@@ -52,6 +52,8 @@ export function addressOf(base: string, rva: string): string {
 }
 
 /** IDA-style placeholder name for an un-renamed function, e.g. "sub_1b30". */
-export function defaultName(rva: string): string {
+export function defaultName(rva?: string): string {
+    if (!rva) return "sub_0";
     return `sub_${rva.startsWith("0x") ? rva.slice(2) : rva}`;
 }
+

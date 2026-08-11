@@ -65,23 +65,28 @@ export function createAnnotations() {
 
     return {
         /** Display name: the custom name if set, else the IDA-style sub_<rva> default. */
-        nameOf(module: string, rva: string): string {
+        nameOf(module: string, rva?: string): string {
+            if (!module || !rva) return defaultName(rva);
             return get(module, rva)?.name ?? defaultName(rva);
         },
         /** True only when the user has assigned a custom name. */
-        hasCustomName(module: string, rva: string): boolean {
+        hasCustomName(module: string, rva?: string): boolean {
+            if (!module || !rva) return false;
             return get(module, rva)?.name !== undefined;
         },
-        isPinned(module: string, rva: string): boolean {
+        isPinned(module: string, rva?: string): boolean {
+            if (!module || !rva) return false;
             return get(module, rva)?.pinned ?? false;
         },
         rename(module: string, rva: string, name: string) {
+            if (!module || !rva) return;
             const trimmed = name.trim();
             mutate(module, rva, (a) => {
                 a.name = trimmed === "" || trimmed === defaultName(rva) ? undefined : trimmed;
             });
         },
         togglePin(module: string, rva: string) {
+            if (!module || !rva) return;
             mutate(module, rva, (a) => {
                 a.pinned = !a.pinned;
             });

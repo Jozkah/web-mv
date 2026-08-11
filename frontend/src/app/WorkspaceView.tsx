@@ -1,4 +1,4 @@
-import { Match, Show, Switch } from "solid-js";
+import { Match, Show, Switch, createMemo } from "solid-js";
 import { useWorkspace, type TabItem } from "./WorkspaceContext";
 import { WorkspaceTabBar } from "./WorkspaceTabBar";
 import { MemoryView } from "../views/memory/MemoryView";
@@ -50,26 +50,42 @@ export function WorkspaceView() {
     );
 }
 
+/**
+ * Renders the view for a given tab. Uses a keyed memo on tab.id so that switching
+ * between two tabs of the same kind (e.g. two Memory Viewer tabs) correctly remounts
+ * the component, preventing state leakage between tabs.
+ */
 function TabContent(props: { tab: TabItem | undefined }) {
+    // Create a composite key from tab id. When it changes, the inner Show/keyed
+    // will remount its children, isolating per-tab state.
+    const tabKey = createMemo(() => props.tab?.id);
+
     return (
-        <Switch>
-            <Match when={props.tab?.kind === "memory"}>
-                <MemoryView classId={props.tab?.classId} />
-            </Match>
-            <Match when={props.tab?.kind === "static"}>
-                <StaticView />
-            </Match>
-            <Match when={props.tab?.kind === "strings"}>
-                <StringsView />
-            </Match>
-            <Match when={props.tab?.kind === "history"}>
-                <HistoryView />
-            </Match>
-            <Match when={props.tab?.kind === "sigscan"}>
-                <div style={{ flex: "1 1 auto", display: "flex", padding: "12px", "min-height": 0 }}>
-                    <ScanCard kind="sig" onClose={() => {}} />
-                </div>
-            </Match>
-        </Switch>
+        <Show when={tabKey()} keyed>
+            {(_id) => {
+                const tab = props.tab!;
+                return (
+                    <Switch>
+                        <Match when={tab.kind === "memory"}>
+                            <MemoryView classId={tab.classId} />
+                        </Match>
+                        <Match when={tab.kind === "static"}>
+                            <StaticView />
+                        </Match>
+                        <Match when={tab.kind === "strings"}>
+                            <StringsView />
+                        </Match>
+                        <Match when={tab.kind === "history"}>
+                            <HistoryView />
+                        </Match>
+                        <Match when={tab.kind === "sigscan"}>
+                            <div style={{ flex: "1 1 auto", display: "flex", padding: "12px", "min-height": 0 }}>
+                                <ScanCard kind="sig" onClose={() => {}} />
+                            </div>
+                        </Match>
+                    </Switch>
+                );
+            }}
+        </Show>
     );
 }
