@@ -19,12 +19,15 @@ Powered by a lightweight Bun relay server and a SolidJS frontend, `web-mv` conne
 * **Regex Filtering & Exports**: Search with Regular Expressions and export string tables to **CSV**, **JSON**, or **TXT**.
 * **Jump to Memory**: Click any string address to immediately open and target a Memory Class at that location.
 
-### ⚡ Static View & Signature Scanner
+### ⚡ Static View & Signature Tools
 * **Function Disassembler**: Enumerate and disassemble process functions with syntax highlighting and opcode inspection.
+* **IDA-Style SigMaker**: Generate minimal unique pattern scan signatures starting from any function or instruction, with automatic RIP-relative (`disp32`) and call/jump (`rel32`) wildcarding.
+* **Auto-Find Unique Signature**: Iteratively expands instruction depth to find the shortest 100% unique signature (1 hit in module) in live process memory.
+* **Interactive Byte Editor**: Visual byte breakdown with clickable pills to toggle wildcard masks per byte manually.
+* **Multi-Format Exporters**: One-click copy for **IDA Pattern** (`48 8B 05 ?? ??`), **C++ String & Mask**, **C++ Byte Array**, **C++ 0x?? Array**, and **Python**.
 * **Function Sigsearch**: Map signature scan hits directly to containing functions, displaying function names, RVAs, hit offsets (`+0x18`), and prologue (`+0x0`) badges.
 * **IDA Signature Scanner**: Search for byte patterns with wildcards, filter by function prologues or mapped code, and resolve RIP-relative instructions (`mov rax, [rip+disp]`).
 * **Direct Function Jump**: Jump straight from signature scan results into function disassembly with a single click (`view function`).
-* **Disp32 Wildcard Helper**: Automatically wildcard displacement bytes into `??` for IDA pattern creation.
 
 ### 🤖 Multi-Agent RPC Multiplexing (`POST /rpc`)
 * **AI Agent Integration**: Exposes a stateless HTTP `POST /rpc` endpoint allowing external AI coding agents (such as VSCode extensions or LLM agents) to query memory concurrently without interrupting the browser UI session.
