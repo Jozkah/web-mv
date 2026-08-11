@@ -53,10 +53,10 @@ Open **`http://127.0.0.1:8080`** in your browser.
 
 ### 2. Connect Target Process (Angel Agent)
 
-Load `web_mv_agent.as` in **Echo/Angel** after launching your target game process:
+Load `example_agent_script.as` in **Echo/Angel** after launching your target game process:
 
 ```angelscript
-// web_mv_agent.as
+// example_agent_script.as
 const string PROCESS_NAME = "HuntGame.exe";
 const string GAME_MODULE  = "GameHunt.dll";
 const string RELAY_URL    = "ws://localhost:8080/agent";

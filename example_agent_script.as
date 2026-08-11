@@ -1,4 +1,4 @@
-// web_mv_agent.as — Echo/Angel agent script for web-mv
+// example_agent_script.as — Echo/Angel agent script example for web-mv
 // Bridges Echo's built-in memory server (process::open_socket) to the web-mv relay.
 //
 // Workflow:
