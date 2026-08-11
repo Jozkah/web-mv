@@ -1,16 +1,17 @@
-import { Show, createSignal } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal } from "solid-js";
 import type { MemoryClass } from "../state/MemoryContext";
 import { exportClassToCpp } from "../export/cppExport";
+import { Window } from "../../../ui/Window";
 
-// Modal displaying generated C++ header code for a MemoryClass definition.
-// Allows easy copy-paste into Visual Studio / IDEs.
+// Floating window displaying generated C++ header code for a MemoryClass definition.
+// Allows easy copy-paste into Visual Studio / IDEs while staying open alongside the class view.
 
 export function CppExportModal(props: {
     cls: MemoryClass | undefined;
     onClose: () => void;
 }) {
     const [copied, setCopied] = createSignal(false);
+    const [pinned, setPinned] = createSignal(false);
 
     const code = () => (props.cls ? exportClassToCpp(props.cls) : "");
 
@@ -21,47 +22,43 @@ export function CppExportModal(props: {
     };
 
     return (
-        <Show when={props.cls}>
-            <Portal>
-                <div class="scan-backdrop" onClick={props.onClose} />
-                <div
-                    class="panel cpp-modal-pop"
+        <Window
+            id="cpp-export-window"
+            title={`C++ Header Export — ${props.cls?.name ?? ""}`}
+            isOpen={props.cls !== undefined}
+            onClose={props.onClose}
+            isPinned={pinned()}
+            onTogglePin={() => setPinned((p) => !p)}
+            initialPos={{ x: 200, y: 100 }}
+            initialSize={{ width: 620, height: 460 }}
+            minWidth={400}
+            minHeight={250}
+            actions={
+                <button
+                    type="button"
+                    class="win-btn"
+                    onClick={copyCode}
+                    style={{ font: "inherit", "font-size": "12px", cursor: "pointer", padding: "2px 8px" }}
+                >
+                    {copied() ? "copied!" : "copy code"}
+                </button>
+            }
+        >
+            <div class="panel-body" style={{ padding: "12px", overflow: "auto", height: "100%" }}>
+                <pre
                     style={{
-                        position: "fixed",
-                        top: "50%",
-                        left: "50%",
-                        transform: "translate(-50%, -50%)",
-                        "z-index": "40",
-                        width: "600px",
-                        "max-width": "90vw",
-                        "max-height": "80vh",
-                        "box-shadow": "0 16px 48px rgba(0, 0, 0, 0.5)",
+                        margin: 0,
+                        "font-family": "var(--mono)",
+                        "font-size": "13px",
+                        "line-height": "1.4",
+                        color: "var(--text-h)",
+                        "white-space": "pre-wrap",
+                        "word-break": "break-all",
                     }}
                 >
-                    <header class="panel-head">
-                        <h2>C++ Header Export — {props.cls?.name}</h2>
-                        <button onClick={copyCode}>
-                            {copied() ? "copied!" : "copy code"}
-                        </button>
-                        <button onClick={props.onClose}>✕</button>
-                    </header>
-                    <div class="panel-body" style={{ padding: "12px", overflow: "auto" }}>
-                        <pre
-                            style={{
-                                margin: 0,
-                                "font-family": "var(--mono)",
-                                "font-size": "13px",
-                                "line-height": "1.4",
-                                color: "var(--text-h)",
-                                "white-space": "pre-wrap",
-                                "word-break": "break-all",
-                            }}
-                        >
-                            <code>{code()}</code>
-                        </pre>
-                    </div>
-                </div>
-            </Portal>
-        </Show>
+                    <code>{code()}</code>
+                </pre>
+            </div>
+        </Window>
     );
 }

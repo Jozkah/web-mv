@@ -11,7 +11,7 @@ export type EncodingFilter = "all" | "ascii" | "utf16";
 export type CategoryFilter = "all" | StringCategory;
 
 function createStringsState() {
-    const { client, attached } = useApp();
+    const { client, attached, history } = useApp();
 
     const [selectedModule, setSelectedModule] = createSignal("");
     const [allStrings, setAllStrings] = createSignal<StringEntry[]>([]);
@@ -44,7 +44,7 @@ function createStringsState() {
         }
     };
 
-    // Filtered + sorted view of the strings
+    // Filtered view of the strings
     const filteredStrings = createMemo(() => {
         let list = allStrings();
 
@@ -58,25 +58,25 @@ function createStringsState() {
 
         // Text filter (plain substring or regex)
         const q = filter().trim();
-        if (q) {
+        if (!q) return list;
+
+        try {
             if (useRegex()) {
-                try {
-                    const re = new RegExp(q, "i");
-                    list = list.filter((s) => re.test(s.value) || re.test(s.address));
-                } catch {
-                    // Invalid regex - return empty or keep list
-                }
+                const rx = new RegExp(q, "i");
+                return list.filter((s) => rx.test(s.value) || rx.test(s.address));
             } else {
                 const lower = q.toLowerCase();
-                list = list.filter(
-                    (s) =>
-                        s.value.toLowerCase().includes(lower) ||
-                        s.address.toLowerCase().includes(lower),
+                return list.filter(
+                    (s) => s.value.toLowerCase().includes(lower) || s.address.toLowerCase().includes(lower),
                 );
             }
+        } catch {
+            return list;
         }
+    });
 
-        // Sort
+    const sortedStrings = createMemo(() => {
+        const list = filteredStrings();
         const col = sortColumn();
         const dir = sortDir();
         const mul = dir === "asc" ? 1 : -1;
@@ -108,8 +108,10 @@ function createStringsState() {
 
         const cacheKey = `${moduleName}@${moduleBase}:${minLength()}`;
         if (scanCache.has(cacheKey)) {
-            setAllStrings(scanCache.get(cacheKey)!);
+            const cached = scanCache.get(cacheKey)!;
+            setAllStrings(cached);
             setStatus("ready");
+            history.addStringScan({ module: moduleName, stringCount: cached.length });
             return;
         }
 
@@ -133,6 +135,7 @@ function createStringsState() {
             scanCache.set(cacheKey, results);
             setAllStrings(results);
             setStatus("ready");
+            history.addStringScan({ module: moduleName, stringCount: results.length });
         } catch (e) {
             if (e instanceof DOMException && e.name === "AbortError") {
                 setStatus("idle");
@@ -186,6 +189,7 @@ function createStringsState() {
         selectedModule,
         allStrings,
         filteredStrings,
+        sortedStrings,
         status,
         error,
         progress,

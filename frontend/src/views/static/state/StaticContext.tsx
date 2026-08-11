@@ -11,7 +11,7 @@ import { createSelection } from "./selection";
 // shared module list and annotations it builds on come from useApp().
 
 function createStaticState() {
-    const { client, modules, base } = useApp();
+    const { client, modules, base, annotations, history } = useApp();
 
     const functions = createFunctionsCache(client);
     const disasm = createDisassemblyCache(client);
@@ -25,11 +25,21 @@ function createStaticState() {
     function selectFunction(module: string, entry: { address: string; size: number }) {
         const moduleBase = modules.baseOf(module);
         if (!moduleBase) return;
+        const rva = rvaOf(moduleBase, entry.address);
         selection.setPendingRva(null);
         selection.setSelectedFunction({
             module,
-            rva: rvaOf(moduleBase, entry.address),
+            rva,
             address: entry.address,
+            size: entry.size,
+        });
+
+        const customName = annotations.hasCustomName(module, rva) ? annotations.nameOf(module, rva) : undefined;
+        history.addFunction({
+            module,
+            rva,
+            address: entry.address,
+            name: customName,
             size: entry.size,
         });
     }

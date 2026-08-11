@@ -1,0 +1,124 @@
+/* Floating Window Component Styling */
+
+.ui-window-frame {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: rgba(22, 22, 32, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    user-select: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ui-window-frame.pinned {
+    border-color: rgba(168, 85, 247, 0.6);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 12px rgba(168, 85, 247, 0.25);
+}
+
+.ui-window-frame.dragging {
+    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.75), 0 0 16px rgba(168, 85, 247, 0.3);
+}
+
+.ui-window-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(30, 30, 44, 0.75);
+    cursor: grab;
+    flex: 0 0 auto;
+}
+
+.ui-window-header:active {
+    cursor: grabbing;
+}
+
+.ui-window-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--heading);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-h);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ui-window-pin-badge {
+    font-size: 12px;
+}
+
+.ui-window-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 0 auto;
+}
+
+.win-btn {
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 2px 6px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s ease;
+}
+
+.win-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-h);
+}
+
+.win-btn.close-btn:hover {
+    background: rgba(239, 68, 68, 0.85);
+    color: #ffffff;
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+.win-btn.pin-btn.active {
+    background: var(--accent-bg);
+    border-color: var(--accent-border);
+    color: var(--accent);
+}
+
+.ui-window-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    user-select: text;
+}
+
+.ui-window-resize-handle {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 14px;
+    height: 14px;
+    cursor: nwse-resize;
+    background: radial-gradient(circle at 10px 10px, rgba(255, 255, 255, 0.4) 1.5px, transparent 2px);
+    background-size: 4px 4px;
+    border-bottom-right-radius: 8px;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+}
+
+.ui-window-resize-handle:hover {
+    opacity: 1;
+}

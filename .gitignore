@@ -12,3 +12,8 @@ release/
 
 # Local working notes, not for publishing
 HANDOFF.md
+
+# Windows device files
+relay/nul
+nul
+

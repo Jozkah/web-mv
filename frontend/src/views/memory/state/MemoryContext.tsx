@@ -4,6 +4,7 @@ import { fieldLength, fieldType, fieldSize, isFill, isStringType, NODE_TYPES, no
 import { addBytes, clearType, createNode, deleteNode, deleteNodes, insertBytes, offsets, padding, renameNode, setNodeType, setNodeTypeForIds, topIndexOf } from "../nodes/layout";
 import { parseHex, toHex } from "../../../state/address";
 import { load, persist } from "../../../state/persist";
+import { useApp } from "../../../app/AppContext";
 
 // Durable state for the memory viewer: the class definitions, which one is active, and the
 // selected node. This is the structure the user builds; it outlives tab switches. The live
@@ -162,6 +163,9 @@ function createMemoryState() {
                 s.activeId = c.id;
                 s.selectedNodeIds = [];
             }));
+            try {
+                useApp().history.addMemory({ classId: c.id, className: c.name, address: c.address });
+            } catch {}
             return c.id;
         },
         removeClass(id: string) {
@@ -178,6 +182,12 @@ function createMemoryState() {
                 s.activeId = id;
                 s.selectedNodeIds = [];
             }));
+            try {
+                const target = store.classes.find((c) => c.id === id);
+                if (target) {
+                    useApp().history.addMemory({ classId: target.id, className: target.name, address: target.address });
+                }
+            } catch {}
         },
         renameClass(id: string, name: string) {
             const trimmed = name.trim();

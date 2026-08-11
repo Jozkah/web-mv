@@ -1,0 +1,279 @@
+/* Multi-tab and Multi-panel workspace layout styles */
+
+.workspace-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.workspace-main {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.workspace-main.split-h {
+    flex-direction: row;
+}
+
+.workspace-main.split-v {
+    flex-direction: column;
+}
+
+.workspace-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+    box-sizing: border-box;
+}
+
+/* Split dividers */
+.workspace-main.split-h .workspace-panel:first-child {
+    border-right: 1px solid var(--border);
+}
+
+.workspace-main.split-v .workspace-panel:first-child {
+    border-bottom: 1px solid var(--border);
+}
+
+/* Panel focus indicator */
+.workspace-panel.focused::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent);
+    pointer-events: none;
+    z-index: 10;
+}
+
+.panel-viewport {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Tab Bar ---------------------------------------------------------------- */
+
+.workspace-tabbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 36px;
+    padding: 0 8px;
+    background: var(--code-bg);
+    border-bottom: 1px solid var(--border);
+    flex: 0 0 auto;
+    user-select: none;
+    gap: 8px;
+}
+
+.workspace-tabs-scroll {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    padding-top: 4px;
+}
+.workspace-tabs-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.ws-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 10px;
+    font-family: var(--heading);
+    font-size: 13px;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s ease, color 0.12s ease;
+    max-width: 200px;
+}
+
+.ws-tab:hover {
+    background: var(--social-bg);
+    color: var(--text-h);
+}
+
+.ws-tab.active {
+    background: var(--bg);
+    color: var(--accent);
+    border-color: var(--border);
+    border-bottom: 1px solid var(--bg);
+    font-weight: 500;
+    margin-bottom: -1px;
+}
+
+.ws-tab .tab-icon {
+    font-size: 13px;
+    line-height: 1;
+    opacity: 0.85;
+}
+
+.ws-tab .tab-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ws-tab .tab-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    font-size: 12px;
+    line-height: 1;
+    color: var(--text);
+    margin-left: 2px;
+    opacity: 0.6;
+    transition: all 0.12s ease;
+}
+
+.ws-tab .tab-close:hover {
+    opacity: 1;
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+/* Add Tab Button & Dropdown Menu ------------------------------------------ */
+
+.ws-tab-add-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.ws-tab-add-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.ws-tab-add-btn:hover {
+    background: var(--social-bg);
+    color: var(--accent);
+    border-color: var(--border);
+}
+
+.ws-tab-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+}
+
+.ws-tab-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: var(--shadow);
+    z-index: 100;
+    min-width: 160px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ws-tab-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text-h);
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s ease;
+}
+
+.ws-tab-menu-item:hover {
+    background: var(--accent-bg);
+    color: var(--accent);
+}
+
+/* Layout Split Toggle Buttons in TopBar ------------------------------------ */
+
+.layout-toggles {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--code-bg);
+    padding: 2px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+}
+
+.layout-btn {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text);
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.12s ease;
+}
+
+.layout-btn:hover {
+    color: var(--text-h);
+}
+
+.layout-btn.active {
+    color: var(--accent);
+    background: var(--bg);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}

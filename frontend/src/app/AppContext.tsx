@@ -2,7 +2,6 @@ import {
     createContext,
     createEffect,
     createMemo,
-    createSignal,
     on,
     useContext,
     type JSX,
@@ -12,40 +11,35 @@ import { createPoll } from "../polling/createPoll";
 import { ping } from "../protocol/requests";
 import { createModulesStore } from "../state/modulesStore";
 import { createAnnotations } from "../state/annotations";
+import { createHistoryStore } from "../state/historyStore";
 import { config } from "../config";
+import { useWorkspace } from "./WorkspaceContext";
 
-// Cross-view application state: the transport client, the liveness poll, and the state
-// that more than one view needs (the module list and the address annotations). Views read
-// it via useApp() and add their own view-local state on top. Created once, under the
-// render root, by AppProvider.
-
-// The app's two page destinations. Sig/String Scan are not destinations - they are cards
-// that pop down from the top bar over whichever destination is active. activeView lives
-// here (not as a Shell-local signal) so a scan result's "create class" / "jump to function"
-// action can switch the active view programmatically.
-export type ViewId = "memory" | "static" | "strings";
+export type ViewId = "memory" | "static" | "strings" | "history";
 
 function createAppState() {
     const client = new AxClient(config.relayUrl);
     client.connect();
 
-    // In dev, HMR re-runs this module and builds a fresh client. Tear the old one down on hot
-    // dispose so it doesn't linger and fight the new socket at the relay (endless reconnect flap).
     if (import.meta.hot) {
         import.meta.hot.dispose(() => client.disconnect());
     }
 
     const modules = createModulesStore(client);
     const annotations = createAnnotations();
+    const history = createHistoryStore();
 
-    const [activeView, setActiveView] = createSignal<ViewId>("memory");
+    const ws = useWorkspace();
+    const activeView = createMemo<ViewId>(() => {
+        const k = ws.activeTab1()?.kind;
+        if (k === "static" || k === "strings" || k === "history") return k;
+        return "memory";
+    });
+    const setActiveView = (v: ViewId) => ws.openOrFocusView(v);
 
     const relayStatus = client.status;
     const relayOpen = createMemo(() => relayStatus() === "open");
 
-    // The app's baseline continuous poll: is the agent attached, and to what. Every other
-    // request is fetch-on-demand. The memory viewer adds the one other continuous poll, over
-    // the bytes it displays, but only while that view is mounted - nothing else polls.
     const pingPoll = createPoll(() => ping(client), config.pingIntervalMs, relayOpen);
 
     const pingData = pingPoll.data;
@@ -53,8 +47,6 @@ function createAppState() {
     const pid = createMemo(() => pingData()?.pid);
     const base = createMemo(() => (pingData()?.attached ? pingData()?.base : undefined));
 
-    // How many RPC callers (VSCode chats) are currently active, polled from the relay's
-    // /status endpoint. The top bar surfaces this so a shared session shows its own fan-out.
     const statusPoll = createPoll(
         () => fetch(config.statusUrl).then((r) => r.json() as Promise<{ agents: number }>),
         config.pingIntervalMs,
@@ -62,9 +54,6 @@ function createAppState() {
     );
     const activeAgents = createMemo(() => statusPoll.data()?.agents ?? 0);
 
-    // The module list follows the attached base: load it when a process is present, reload
-    // it when the base changes (re-attach / new process), drop it when the agent detaches.
-    // Views hang their own address-keyed cache resets off `base` the same way.
     createEffect(
         on(base, (b) => {
             if (b === undefined) modules.clear();
@@ -82,6 +71,7 @@ function createAppState() {
         base,
         modules,
         annotations,
+        history,
         activeView,
         setActiveView,
     };

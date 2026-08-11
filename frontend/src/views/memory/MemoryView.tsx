@@ -20,11 +20,16 @@ import { MemoryFooter } from "./components/MemoryFooter";
 // never touches the network. The poll reads the new region in the background and supersedes any
 // in-flight read on a switch (see useMemorySnapshot), so it can't block or stall the UI.
 
-export function MemoryView() {
+export function MemoryView(props?: { classId?: string }) {
     const app = useApp();
     const memory = useMemory();
 
-    const activeClass = () => memory.activeClass();
+    const activeClass = () => {
+        if (props?.classId) {
+            return memory.classes.find((c) => c.id === props.classId) ?? memory.activeClass();
+        }
+        return memory.activeClass();
+    };
     const nodes = () => activeClass()?.nodes ?? [];
     const baseAddress = () => activeClass()?.address ?? "";
     const size = () => totalSize(nodes());

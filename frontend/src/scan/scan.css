@@ -2,24 +2,12 @@
    click-away backdrop. Reuses the shared panel/list/row vocabulary; only the card-specific
    controls and result grouping live here. */
 
-.scan-backdrop {
-    position: absolute;
-    inset: 0;
-    z-index: 10;
-}
-
-.scan-popdown {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    z-index: 11;
-    width: 460px;
-    max-width: calc(100% - 16px);
-}
-
 .scan-card {
-    max-height: min(70vh, 640px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
 }
 
 .scan-controls {
@@ -194,18 +182,91 @@
 
 .scan-hit {
     cursor: default;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
 }
-.scan-hit button {
-    flex: 0 0 auto;
-    font: inherit;
+
+.scan-hit .addr {
+    font-family: var(--mono);
     font-size: 12px;
+    flex: 0 0 auto;
+}
+
+.scan-filter-modes {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    padding-top: 4px;
+}
+.scan-filter-label {
+    color: var(--text);
+    font-family: var(--mono);
+}
+.scan-filter-modes button {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 11px;
+    cursor: pointer;
+    color: var(--text);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+}
+.scan-filter-modes button.active {
+    color: var(--accent);
+    background: var(--accent-bg);
+    border-color: var(--accent-border);
+}
+
+.fn-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 170px;
+    flex: 1 1 auto;
+}
+.fn-badge.prologue {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.4);
+    font-weight: 600;
+}
+.fn-badge.unmapped {
+    background: rgba(148, 163, 184, 0.1);
+    color: var(--text);
+    border-color: transparent;
+    font-style: italic;
+}
+
+.scan-hit-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    flex: 0 0 auto;
+}
+.scan-hit-actions button {
+    font: inherit;
+    font-size: 11px;
     cursor: pointer;
     color: var(--accent);
     background: var(--accent-bg);
     border: 1px solid transparent;
-    border-radius: 5px;
-    padding: 1px 8px;
+    border-radius: 4px;
+    padding: 2px 6px;
 }
-.scan-hit button:hover {
+.scan-hit-actions button:hover {
     border-color: var(--accent-border);
 }
+

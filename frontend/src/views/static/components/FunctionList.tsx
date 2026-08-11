@@ -2,10 +2,14 @@ import { For, Show, createMemo, createSignal } from "solid-js";
 import { useApp } from "../../../app/AppContext";
 import { useStatic } from "../state/StaticContext";
 import { parseHex, rvaOf } from "../../../state/address";
+import { sigScanIda } from "../../../protocol/requests";
+import { errorText } from "../../../state/errors";
 import { Panel } from "../../../ui/Panel";
 import { RenameInput } from "../../../ui/RenameInput";
 import { StatusOverlay } from "../../../ui/StatusOverlay";
 import { createListVirtualizer } from "../../../ui/virtualList";
+import { resolveFunctionHits, type FunctionSigHit } from "../../../scan/functionSigSearch";
+import { SigMakerModal } from "./SigMakerModal";
 
 const ROW_HEIGHT = 28;
 
@@ -21,18 +25,20 @@ function textWidth(s: string): number {
 }
 
 type SortKey = "address" | "size";
+type SearchMode = "text" | "sig";
 
 // Middle panel: functions for the selected module, served from the cache (instant on
 // re-select). Pinned functions float to the top; double-click a name to rename; the star
 // toggles a pin; the sort bar orders by address, size, or scan type.
 //
-// The scroll container is mounted unconditionally (states are overlays) so the virtualizer
-// always has a scroll element to observe; gating it behind the loading/error <Show> would
-// mount the virtualizer with no element and render nothing.
+// Supports both standard substring/address searching and IDA-style Signature Search (sigsearch)
+// to locate containing functions matching a byte pattern or function prologue.
 
 export function FunctionList() {
-    const { modules, annotations } = useApp();
-    const { functions, selection, selectFunction } = useStatic();
+    const { client, attached, modules, annotations } = useApp();
+    const { functions, selection, selectFunction, disasm } = useStatic();
+
+    const [sigMakerTarget, setSigMakerTarget] = createSignal<{ module: string; address: string; name?: string; size: number } | null>(null);
 
     const moduleName = () => selection.selectedModule();
     const entry = () => {
@@ -55,11 +61,66 @@ export function FunctionList() {
     };
     const sortArrow = (key: SortKey) => (sortKey() !== key ? "" : sortAsc() ? "▲" : "▼");
 
+    // Search state
+    const [searchMode, setSearchMode] = createSignal<SearchMode>("text");
     const [query, setQuery] = createSignal("");
 
-    // Function rows: enriched with RVA, filtered by the search query, sorted by the chosen
-    // key, pinned ones floated to the top. Recomputes when the cached list, the search, the
-    // sort, or a pin changes.
+    // Function Sigsearch state
+    const [sigPattern, setSigPattern] = createSignal("");
+    const [sigPrologueOnly, setSigPrologueOnly] = createSignal(false);
+    const [sigStatus, setSigStatus] = createSignal<"idle" | "scanning" | "done" | "error">("idle");
+    const [sigMap, setSigMap] = createSignal<Map<string, FunctionSigHit>>(new Map());
+    const [sigError, setSigError] = createSignal<string | null>(null);
+
+    const runSigScan = async () => {
+        const m = moduleName();
+        if (!m || !sigPattern().trim() || !attached()) return;
+
+        setSigStatus("scanning");
+        setSigError(null);
+        try {
+            const raw = await sigScanIda(client, {
+                pattern: sigPattern().trim(),
+                module: m,
+                find_all: true,
+            });
+
+            const base = modules.baseOf(m);
+            const e = functions.get(m);
+            const fns = e?.status === "ready" ? e.data : [];
+
+            if (base && fns.length > 0) {
+                const resolved = resolveFunctionHits(raw.results, m, base, fns, annotations);
+                const map = new Map<string, FunctionSigHit>();
+                for (const h of resolved) {
+                    if (h.function) {
+                        const existing = map.get(h.function.address);
+                        // If multiple hits land in the same function, prioritize prologue (+0x0) or first hit
+                        if (!existing || h.isPrologue) {
+                            map.set(h.function.address, h);
+                        }
+                    }
+                }
+                setSigMap(map);
+            } else {
+                setSigMap(new Map());
+            }
+            setSigStatus("done");
+        } catch (err) {
+            setSigStatus("error");
+            setSigError(errorText(err));
+        }
+    };
+
+    const clearSigScan = () => {
+        setSigPattern("");
+        setSigStatus("idle");
+        setSigMap(new Map());
+        setSigError(null);
+    };
+
+    // Function rows: enriched with RVA, filtered by the search query / sigsearch, sorted by the chosen
+    // key, pinned ones floated to the top.
     const rows = createMemo(() => {
         const m = moduleName();
         const e = m ? functions.get(m) : undefined;
@@ -78,21 +139,32 @@ export function FunctionList() {
             rva: rvaOf(base, f.address),
         }));
 
-        // Substring match on the display name (sub_<rva> or a rename) or the address.
-        const q = query().trim().toLowerCase();
-        const filtered = q
-            ? mapped.filter(
-                  (f) =>
-                      f.address.toLowerCase().includes(q) ||
-                      annotations.nameOf(m, f.rva).toLowerCase().includes(q),
-              )
-            : mapped;
+        let filtered = mapped;
+
+        if (searchMode() === "text") {
+            const q = query().trim().toLowerCase();
+            filtered = q
+                ? mapped.filter(
+                      (f) =>
+                          f.address.toLowerCase().includes(q) ||
+                          annotations.nameOf(m, f.rva).toLowerCase().includes(q),
+                  )
+                : mapped;
+        } else if (searchMode() === "sig" && sigStatus() === "done") {
+            const map = sigMap();
+            const prologueOnly = sigPrologueOnly();
+            filtered = mapped.filter((f) => {
+                const hit = map.get(f.address);
+                if (!hit) return false;
+                if (prologueOnly) return hit.isPrologue;
+                return true;
+            });
+        }
 
         const key = sortKey();
         const dir = sortAsc() ? 1 : -1;
         filtered.sort((a, b) => {
             const primary = key === "size" ? a.size - b.size : byAddress(a.address, b.address);
-            // Stable tie-break on address so equal sizes stay ordered.
             return (primary || byAddress(a.address, b.address)) * dir;
         });
 
@@ -105,10 +177,8 @@ export function FunctionList() {
         ];
     });
 
-    // Widest rendered text per column (in px), measured over the whole module list - not the
-    // filtered rows, so searching doesn't reshuffle the layout. Drives the shared grid template
-    // (every row uses the same one, so the columns line up into a table) and the pane width.
-    const NAME_MAX = 360; // cap a runaway rename so it can't blow the pane out
+    // Widest rendered text per column
+    const NAME_MAX = 360;
     const columns = createMemo(() => {
         const m = moduleName();
         const e = m ? functions.get(m) : undefined;
@@ -130,11 +200,8 @@ export function FunctionList() {
         };
     });
 
-    // Each lane = its text width + the cell's 24px side padding + 1px splitter (divided lanes) +
-    // 2px slack so the ellipsis never trips. A trailing spacer absorbs any leftover width (e.g. the
-    // pane's min-width on a tiny module) at the right edge, never mid-row.
-    const PAD = 26; // 24px padding + 2px slack
-    const PIN = 32; // star + its padding
+    const PAD = 26;
+    const PIN = 32;
     const lane = (px: number, border = 0) => `${px + PAD + border}px`;
     const gridTemplate = createMemo(() => {
         const c = columns();
@@ -143,8 +210,6 @@ export function FunctionList() {
             : undefined;
     });
 
-    // Pane width = the sum of every lane plus the pin, so it matches the grid's intrinsic width and
-    // the spacer collapses to ~0. CSS min/max-width bounds it.
     const contentWidth = createMemo(() => {
         const c = columns();
         if (!c) return undefined;
@@ -154,138 +219,260 @@ export function FunctionList() {
 
     const { setRef, virtualizer } = createListVirtualizer(() => rows().length, ROW_HEIGHT);
 
-    const [editing, setEditing] = createSignal<string | null>(null); // rva under rename
+    const [editing, setEditing] = createSignal<string | null>(null);
     const commitRename = (module: string, rva: string, value: string) => {
         annotations.rename(module, rva, value);
         setEditing(null);
     };
 
+    const launchSigMaker = (module: string, fn: { address: string; size: number; rva: string }) => {
+        disasm.ensure(fn.address, fn.size);
+        const name = annotations.nameOf(module, fn.rva);
+        setSigMakerTarget({ module, address: fn.address, name, size: fn.size });
+    };
+
     return (
-        <Panel
-            class="panel-functions"
-            style={contentWidth() ? { flex: "0 0 auto", width: contentWidth() } : undefined}
-            title="functions"
-            meta={
-                <Show when={moduleName()} fallback="none">
-                    {(m) => (
-                        <>
-                            {m()}
-                            <Show when={entry()?.status === "ready"}> · {rows().length}</Show>
-                        </>
-                    )}
-                </Show>
-            }
-            actions={
-                <button
-                    onClick={() => {
-                        const m = moduleName();
-                        if (m) functions.refresh(m);
-                    }}
-                    disabled={moduleName() === null || entry()?.status === "loading"}
-                >
-                    refresh
-                </button>
-            }
-        >
-            <div class="sortbar">
-                <span class="sortbar-label">sort</span>
-                <button classList={{ active: sortKey() === "address" }} onClick={() => toggleSort("address")}>
-                    addr {sortArrow("address")}
-                </button>
-                <button classList={{ active: sortKey() === "size" }} onClick={() => toggleSort("size")}>
-                    size {sortArrow("size")}
-                </button>
-            </div>
-
-            <div class="searchbar">
-                <input
-                    class="search"
-                    type="text"
-                    placeholder="search name or address"
-                    value={query()}
-                    onInput={(e) => setQuery(e.currentTarget.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === "Escape") setQuery("");
-                    }}
-                />
-            </div>
-
-            <div class="panel-body">
-                <div ref={setRef} class="list" style={{ "--fn-cols": gridTemplate() ?? "" }}>
-                    <div style={{ height: `${virtualizer.getTotalSize()}px`, position: "relative", width: "100%" }}>
-                        <For each={virtualizer.getVirtualItems()}>
-                            {(item) => {
-                                const m = moduleName()!;
-                                const fn = () => rows()[item.index];
-                                const rva = () => fn().rva;
-                                const pinned = () => annotations.isPinned(m, rva());
-                                const selected = () => {
-                                    const sel = selection.selectedFunction();
-                                    return sel?.module === m && sel?.address === fn().address;
-                                };
-                                return (
-                                    <div
-                                        class="row fn-row"
-                                        classList={{ selected: selected() }}
-                                        style={{
-                                            position: "absolute",
-                                            top: 0,
-                                            left: 0,
-                                            width: "100%",
-                                            height: `${item.size}px`,
-                                            transform: `translateY(${item.start}px)`,
-                                        }}
-                                        onClick={() => selectFunction(m, fn())}
-                                    >
-                                        <button
-                                            class="pin"
-                                            classList={{ active: pinned() }}
-                                            title={pinned() ? "unpin" : "pin"}
-                                            onClick={(ev) => {
-                                                ev.stopPropagation();
-                                                annotations.togglePin(m, rva());
-                                            }}
-                                        >
-                                            {pinned() ? "★" : "☆"}
-                                        </button>
-                                        <Show
-                                            when={editing() === rva()}
-                                            fallback={
-                                                <span
-                                                    class="grow fn-name"
-                                                    title="double-click to rename"
-                                                    classList={{ custom: annotations.hasCustomName(m, rva()) }}
-                                                    onDblClick={(ev) => {
-                                                        ev.stopPropagation();
-                                                        setEditing(rva());
-                                                    }}
-                                                >
-                                                    {annotations.nameOf(m, rva())}
-                                                </span>
-                                            }
-                                        >
-                                            <RenameInput
-                                                class="grow rename"
-                                                value={annotations.nameOf(m, rva())}
-                                                onCommit={(value) => commitRename(m, rva(), value)}
-                                                onCancel={() => setEditing(null)}
-                                            />
-                                        </Show>
-                                        <span class="addr">{fn().address}</span>
-                                        <span class="dim">{fn().size}B</span>
-                                    </div>
-                                );
+        <>
+            <Panel
+                class="panel-functions"
+                style={contentWidth() ? { flex: "0 0 auto", width: contentWidth() } : undefined}
+                title="functions"
+                meta={
+                    <Show when={moduleName()} fallback="none">
+                        {(m) => (
+                            <>
+                                {m()}
+                                <Show when={entry()?.status === "ready"}> · {rows().length}</Show>
+                            </>
+                        )}
+                    </Show>
+                }
+                actions={
+                    <div style={{ display: "flex", gap: "4px" }}>
+                        <Show when={selection.selectedFunction()}>
+                            {(sel) => (
+                                <button
+                                    onClick={() => launchSigMaker(sel().module, sel())}
+                                    title="Open SigMaker for selected function"
+                                    style={{ font: "inherit", "font-size": "12px", cursor: "pointer", padding: "2px 6px" }}
+                                >
+                                    ⚡ sigmaker
+                                </button>
+                            )}
+                        </Show>
+                        <button
+                            onClick={() => {
+                                const m = moduleName();
+                                if (m) functions.refresh(m);
                             }}
-                        </For>
+                            disabled={moduleName() === null || entry()?.status === "loading"}
+                        >
+                            refresh
+                        </button>
+                    </div>
+                }
+            >
+                <div class="sortbar">
+                    <span class="sortbar-label">sort</span>
+                    <button classList={{ active: sortKey() === "address" }} onClick={() => toggleSort("address")}>
+                        addr {sortArrow("address")}
+                    </button>
+                    <button classList={{ active: sortKey() === "size" }} onClick={() => toggleSort("size")}>
+                        size {sortArrow("size")}
+                    </button>
+
+                    <span class="sortbar-sep" />
+
+                    <div class="search-mode-tabs">
+                        <button
+                            classList={{ active: searchMode() === "text" }}
+                            onClick={() => setSearchMode("text")}
+                        >
+                            name/addr
+                        </button>
+                        <button
+                            classList={{ active: searchMode() === "sig" }}
+                            onClick={() => setSearchMode("sig")}
+                            title="Find functions matching an IDA signature pattern"
+                        >
+                            sigsearch
+                        </button>
                     </div>
                 </div>
 
-                <StatusOverlay message={moduleName() === null && "select a module to view its functions"} />
-                <StatusOverlay
-                    message={moduleName() !== null && entry()?.status === "loading" && "enumerating…"}
-                />
-                <StatusOverlay message={errorMsg()} error />
-            </div>
-        </Panel>
+                <Show
+                    when={searchMode() === "sig"}
+                    fallback={
+                        <div class="searchbar">
+                            <input
+                                class="search"
+                                type="text"
+                                placeholder="search name or address"
+                                value={query()}
+                                onInput={(e) => setQuery(e.currentTarget.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Escape") setQuery("");
+                                }}
+                            />
+                        </div>
+                    }
+                >
+                    <div class="sigsearch-bar">
+                        <div class="sigsearch-input-row">
+                            <input
+                                class="search sig-input"
+                                type="text"
+                                placeholder="IDA pattern, e.g. 48 89 5C 24 ??"
+                                value={sigPattern()}
+                                onInput={(e) => setSigPattern(e.currentTarget.value)}
+                                onKeyDown={(e) => e.key === "Enter" && runSigScan()}
+                            />
+                            <button
+                                class="sig-scan-btn"
+                                onClick={runSigScan}
+                                disabled={!attached() || !moduleName() || !sigPattern().trim() || sigStatus() === "scanning"}
+                            >
+                                {sigStatus() === "scanning" ? "scanning…" : "scan sig"}
+                            </button>
+                        </div>
+
+                        <div class="sigsearch-opts-row">
+                            <label class="sig-field check">
+                                <input
+                                    type="checkbox"
+                                    checked={sigPrologueOnly()}
+                                    onChange={(e) => setSigPrologueOnly(e.currentTarget.checked)}
+                                />
+                                prologues only (+0x0)
+                            </label>
+
+                            <Show when={sigStatus() === "done"}>
+                                <span class="sig-stats">
+                                    {sigMap().size} functions matched
+                                </span>
+                                <button class="sig-clear-btn" onClick={clearSigScan}>
+                                    clear
+                                </button>
+                            </Show>
+                        </div>
+
+                        <Show when={sigError()}>
+                            {(err) => <div class="sig-error">{err()}</div>}
+                        </Show>
+                    </div>
+                </Show>
+
+                <div class="panel-body">
+                    <div ref={setRef} class="list" style={{ "--fn-cols": gridTemplate() ?? "" }}>
+                        <div style={{ height: `${virtualizer.getTotalSize()}px`, position: "relative", width: "100%" }}>
+                            <For each={virtualizer.getVirtualItems()}>
+                                {(item) => {
+                                    const m = moduleName()!;
+                                    const fn = () => rows()[item.index];
+                                    const rva = () => fn().rva;
+                                    const pinned = () => annotations.isPinned(m, rva());
+                                    const selected = () => {
+                                        const sel = selection.selectedFunction();
+                                        return sel?.module === m && sel?.address === fn().address;
+                                    };
+                                    const sigHit = () => sigMap().get(fn().address);
+
+                                    return (
+                                        <div
+                                            class="row fn-row"
+                                            classList={{ selected: selected() }}
+                                            style={{
+                                                position: "absolute",
+                                                top: 0,
+                                                left: 0,
+                                                width: "100%",
+                                                height: `${item.size}px`,
+                                                transform: `translateY(${item.start}px)`,
+                                            }}
+                                            onClick={() => selectFunction(m, fn())}
+                                        >
+                                            <button
+                                                class="pin"
+                                                classList={{ active: pinned() }}
+                                                title={pinned() ? "unpin" : "pin"}
+                                                onClick={(ev) => {
+                                                    ev.stopPropagation();
+                                                    annotations.togglePin(m, rva());
+                                                }}
+                                            >
+                                                {pinned() ? "★" : "☆"}
+                                            </button>
+                                            <Show
+                                                when={editing() === rva()}
+                                                fallback={
+                                                    <span
+                                                        class="grow fn-name"
+                                                        title="double-click to rename"
+                                                        classList={{ custom: annotations.hasCustomName(m, rva()) }}
+                                                        onDblClick={(ev) => {
+                                                            ev.stopPropagation();
+                                                            setEditing(rva());
+                                                        }}
+                                                    >
+                                                        {annotations.nameOf(m, rva())}
+                                                        <Show when={searchMode() === "sig" && sigHit()}>
+                                                            {(hit) => (
+                                                                <span
+                                                                    class="fn-sig-tag"
+                                                                    classList={{ prologue: hit().isPrologue }}
+                                                                >
+                                                                    {hit().isPrologue ? "PROLOGUE" : `+0x${hit().offset?.toString(16)}`}
+                                                                </span>
+                                                            )}
+                                                        </Show>
+                                                    </span>
+                                                }
+                                            >
+                                                <RenameInput
+                                                    class="grow rename"
+                                                    value={annotations.nameOf(m, rva())}
+                                                    onCommit={(value) => commitRename(m, rva(), value)}
+                                                    onCancel={() => setEditing(null)}
+                                                />
+                                            </Show>
+                                            <span class="addr">{fn().address}</span>
+                                            <span class="dim">{fn().size}B</span>
+                                        </div>
+                                    );
+                                }}
+                            </For>
+                        </div>
+                    </div>
+
+                    <StatusOverlay message={moduleName() === null && "select a module to view its functions"} />
+                    <StatusOverlay
+                        message={moduleName() !== null && entry()?.status === "loading" && "enumerating…"}
+                    />
+                    <StatusOverlay message={errorMsg()} error />
+                </div>
+            </Panel>
+
+            <Show when={sigMakerTarget()}>
+                {(target) => {
+                    const entry = disasm.get(target().address);
+                    const ready = entry?.status === "ready" ? entry.data : undefined;
+                    return (
+                        <Show when={ready}>
+                            {(d) => (
+                                <SigMakerModal
+                                    moduleName={target().module}
+                                    functionName={target().name}
+                                    functionAddress={target().address}
+                                    instructions={d().results}
+                                    onClose={() => setSigMakerTarget(null)}
+                                />
+                            )}
+                        </Show>
+                    );
+                }}
+            </Show>
+        </>
     );
 }
+
+

@@ -21,7 +21,9 @@ Powered by a lightweight Bun relay server and a SolidJS frontend, `web-mv` conne
 
 ### ⚡ Static View & Signature Scanner
 * **Function Disassembler**: Enumerate and disassemble process functions with syntax highlighting and opcode inspection.
-* **IDA Signature Scanner**: Search for byte patterns with wildcards and resolve RIP-relative instructions (`mov rax, [rip+disp]`).
+* **Function Sigsearch**: Map signature scan hits directly to containing functions, displaying function names, RVAs, hit offsets (`+0x18`), and prologue (`+0x0`) badges.
+* **IDA Signature Scanner**: Search for byte patterns with wildcards, filter by function prologues or mapped code, and resolve RIP-relative instructions (`mov rax, [rip+disp]`).
+* **Direct Function Jump**: Jump straight from signature scan results into function disassembly with a single click (`view function`).
 * **Disp32 Wildcard Helper**: Automatically wildcard displacement bytes into `??` for IDA pattern creation.
 
 ### 🤖 Multi-Agent RPC Multiplexing (`POST /rpc`)
