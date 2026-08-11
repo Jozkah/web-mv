@@ -1,14 +1,12 @@
 import type { ServerWebSocket, WebSocketHandler } from "bun";
 
-// The relay forwards raw frames between the single browser UI and the single agent
-// (Echo host). On top of that dumb pipe it multiplexes any number of stateless HTTP
-// callers (POST /rpc - see index.ts) onto that same agent: every request carries an
-// echoed integer `id`, so replies can be routed back to whoever asked.
+// The relay forwards raw frames between any number of browser UI tabs and the single agent
+// (Echo host). On top of that pipe it multiplexes stateless HTTP callers (POST /rpc - see index.ts)
+// onto that same agent: every request carries an echoed integer `id`, so replies can be routed back.
 //
-// The two lanes coexist by partitioning the id space. The browser (AxClient) numbers
-// its requests from 1 upward; the relay numbers RPC requests from RPC_ID_BASE upward.
-// An agent reply whose id lands in the RPC range resolves a pending HTTP call and is
-// NOT forwarded to the UI; anything else is forwarded verbatim (current behaviour).
+// UI clients generate unique request IDs (prefixed per tab instance). Agent responses for UI
+// are broadcasted to all connected UI browser tabs, where each tab matches its own pending request
+// by ID and ignores non-matching frames.
 
 export type Role = "ui" | "agent";
 
@@ -16,20 +14,17 @@ export interface SocketData {
     role: Role;
 }
 
-let ui: ServerWebSocket<SocketData> | null = null;
+const uiSockets = new Set<ServerWebSocket<SocketData>>();
 let agent: ServerWebSocket<SocketData> | null = null;
 
 // --- RPC multiplexer state -------------------------------------------------
 
-// RPC ids live far above anything the frontend's AxClient will ever reach (it counts
-// from 1), so the two lanes never collide on a shared agent socket.
+// RPC ids live far above anything the frontend's AxClient will ever reach, so the two lanes
+// never collide on a shared agent socket.
 const RPC_ID_BASE = 0x40000000; // 1,073,741,824
 
 // Whole-module results (enumerate, scans) arrive as tens-of-MB frames. RPC is meant
-// for point reads and other small ops, so any agent frame larger than this is, by
-// construction, a UI-lane result - skip parsing it and forward straight to the browser.
-// This is a performance guard only: smaller UI replies are still parsed and correctly
-// routed to the UI because their id falls below RPC_ID_BASE.
+// for point reads and other small ops, so any agent frame larger than this is a UI-lane result.
 const RPC_MAX_REPLY_BYTES = 8 * 1024 * 1024;
 
 interface RpcPending {
@@ -43,16 +38,13 @@ let rpcNextId = 1;
 
 /**
  * Send a protocol frame to the agent on behalf of a stateless HTTP caller and resolve
- * with the agent's raw JSON reply. Assigns a unique RPC id (overriding any `id` in the
- * caller's frame), parks a promise keyed by that id, and lets the agent `message`
- * handler resolve it when the matching reply arrives.
+ * with the agent's raw JSON reply.
  */
 export function callAgent(frame: Record<string, unknown>, timeoutMs: number): Promise<string> {
     const sock = agent;
     if (!sock) return Promise.reject(new Error("no agent connected"));
 
     const id = RPC_ID_BASE + rpcNextId++;
-    // Wrap rpcNextId so a very long-lived relay never climbs out of the RPC range.
     if (rpcNextId >= RPC_ID_BASE) rpcNextId = 1;
 
     const payload = JSON.stringify({ ...frame, id });
@@ -75,10 +67,6 @@ function rejectAllRpc(err: Error): void {
 }
 
 // --- Active-client tracking (drives the UI's "agents" badge) ----------------
-// RPC is stateless HTTP, so callers self-identify with an `x-mv-client` header. We keep the
-// last-seen time per id and count anyone seen within the TTL as currently active - a chat
-// that has gone quiet for longer than this ages out. Date.now is fine here: this is the Bun
-// runtime, not a workflow script.
 const CLIENT_TTL_MS = 15_000;
 const lastSeen = new Map<string, number>();
 
@@ -114,8 +102,8 @@ function readFrameId(message: string | Buffer): number | undefined {
 }
 
 /**
- * Route a frame from the agent. If it belongs to a pending RPC call, resolve that call
- * and stop. Otherwise it is a UI-lane reply - forward it to the browser verbatim.
+ * Route a frame from the agent. If it belongs to a pending RPC call, resolve that call.
+ * Otherwise forward to all connected browser UI clients.
  */
 function routeAgentFrame(message: string | Buffer): void {
     if (rpcPending.size > 0 && frameByteLength(message) <= RPC_MAX_REPLY_BYTES) {
@@ -130,54 +118,44 @@ function routeAgentFrame(message: string | Buffer): void {
             }
         }
     }
-    ui?.send(message);
-}
-
-function peerOf(role: Role): ServerWebSocket<SocketData> | null {
-    return role === "ui" ? agent : ui;
+    for (const client of uiSockets) {
+        client.send(message);
+    }
 }
 
 export const handlers: WebSocketHandler<SocketData> = {
-    // Whole-module results (enumerate, scans) on large binaries arrive as a single frame that
-    // is tens of MB, far past Bun's 16MB default. Without these raised, Bun closes the sender's
-    // socket (close 1009) the moment such a frame arrives - which the agent sees as a reset
-    // (websocket_receive failed 0x2efe). backpressureLimit covers forwarding that frame on to a
-    // slower peer; idleTimeout is generous since a single-threaded agent can go quiet for a
-    // while mid-enumerate.
     maxPayloadLength: 256 * 1024 * 1024,
     backpressureLimit: 256 * 1024 * 1024,
     idleTimeout: 300,
 
     open(ws) {
-        // One of each. A new connection of the same role replaces the old one.
         if (ws.data.role === "ui") {
-            ui?.close(1000, "replaced by newer ui");
-            ui = ws;
+            uiSockets.add(ws);
+            console.log(`[+] ui connected (total: ${uiSockets.size})`);
         } else {
             agent?.close(1000, "replaced by newer agent");
             agent = ws;
+            console.log(`[+] agent connected`);
         }
-        console.log(`[+] ${ws.data.role} connected`);
     },
 
     message(ws, message) {
         if (ws.data.role === "agent") {
-            // May be an RPC reply (resolve the caller) or a UI reply (forward on).
             routeAgentFrame(message);
         } else {
-            // UI -> agent: forward verbatim, no parsing, no caching.
-            peerOf(ws.data.role)?.send(message);
+            agent?.send(message);
         }
     },
 
     close(ws, code, reason) {
-        if (ws.data.role === "ui" && ui === ws) ui = null;
+        if (ws.data.role === "ui") {
+            uiSockets.delete(ws);
+            console.log(`[-] ui disconnected (code ${code}, remaining: ${uiSockets.size})`);
+        }
         if (ws.data.role === "agent" && agent === ws) {
             agent = null;
-            // No agent means no reply will ever come - fail every in-flight RPC now
-            // rather than letting each one wait out its timeout.
             rejectAllRpc(new Error("agent disconnected"));
+            console.log(`[-] agent disconnected (code ${code}${reason ? `, ${reason}` : ""})`);
         }
-        console.log(`[-] ${ws.data.role} disconnected (code ${code}${reason ? `, ${reason}` : ""})`);
     },
 };

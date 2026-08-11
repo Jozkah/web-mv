@@ -47,7 +47,14 @@ export const REQUEST_TIMEOUT_MS = 8000;
 export class AxClient {
     private readonly conn: Connection;
     private readonly pending = new Map<number, Pending>();
-    private nextId = 1;
+    private readonly instanceId = Math.floor(Math.random() * 10000) + 1;
+    private seq = 1;
+
+    private generateId(): number {
+        const id = this.instanceId * 100000 + (this.seq++);
+        if (this.seq >= 100000) this.seq = 1;
+        return id;
+    }
 
     constructor(url: string) {
         this.conn = new Connection(url, {
@@ -79,7 +86,7 @@ export class AxClient {
         schema: S,
         timeoutMs: number = REQUEST_TIMEOUT_MS,
     ): Promise<z.infer<S>> {
-        const id = this.nextId++;
+        const id = this.generateId();
         return new Promise<z.infer<S>>((resolve, reject) => {
             const frame = JSON.stringify({ type, id, ...payload });
             if (!this.conn.send(frame)) {
