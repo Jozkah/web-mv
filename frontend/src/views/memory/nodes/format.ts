@@ -61,9 +61,35 @@ export function formatInt(value: number | bigint, unsignedHex: string): string {
     return `${value.toString()} (0x${unsignedHex})`;
 }
 
+/** Bitfield display: fixed-width binary grouped into nibbles, e.g. 0xA5 -> "1010 0101". */
+export function formatBinary(value: number | bigint, bits: number): string {
+    const b = value.toString(2).padStart(bits, "0");
+    return b.replace(/(.{4})(?=.)/g, "$1 ");
+}
+
 export interface DiffSegment {
     text: string;
     changed: boolean;
+}
+
+// Per-byte hex pairs with a changed flag against the previous tick's bytes, so the raw-bytes
+// column can highlight exactly which bytes moved (ReClass-style). Mirrors bytePairs' spacing.
+export function bytePairsDiff(
+    view: DataView,
+    prev: DataView | undefined,
+    offset: number,
+    len: number,
+    upper = true,
+): DiffSegment[] {
+    const segs: DiffSegment[] = [];
+    for (let i = 0; i < len && offset + i < view.byteLength; i++) {
+        const cur = view.getUint8(offset + i);
+        const h = cur.toString(16).padStart(2, "0");
+        const changed =
+            prev !== undefined && offset + i < prev.byteLength && prev.getUint8(offset + i) !== cur;
+        segs.push({ text: (i > 0 ? " " : "") + (upper ? h.toUpperCase() : h), changed });
+    }
+    return segs;
 }
 
 // Split `cur` against the previous tick's value so only the characters that actually moved

@@ -1,6 +1,6 @@
 import { StreamLanguage, HighlightStyle, syntaxHighlighting } from "@codemirror/language";
-import { EditorView } from "@codemirror/view";
-import { EditorState } from "@codemirror/state";
+import { Decoration, EditorView, WidgetType, type DecorationSet } from "@codemirror/view";
+import { EditorState, RangeSetBuilder, StateEffect, StateField } from "@codemirror/state";
 import { tags as t } from "@lezer/highlight";
 import type { Instruction } from "../../../../protocol/types";
 import { parseHex } from "../../../../state/address";
@@ -63,16 +63,91 @@ const theme = EditorView.theme({
     ".cm-content": { fontFamily: "var(--mono)" },
     ".cm-gutters": { backgroundColor: "transparent", border: "none" },
     "&.cm-focused": { outline: "none" },
+    ".cm-operand-label": { color: "var(--text)", opacity: "0.5", fontStyle: "italic", marginLeft: "1.5ch" },
+    ".cm-operand-label.nav": { cursor: "pointer" },
+    ".cm-operand-label.nav:hover": { opacity: "0.9", textDecoration: "underline" },
 });
 
-const extensions = [
-    asmLanguage,
-    syntaxHighlighting(highlightStyle),
-    EditorView.editable.of(false),
-    EditorState.readOnly.of(true),
-    EditorView.lineWrapping,
-    theme,
-];
+// A resolved operand annotation for one instruction line: the display text (a function name or
+// `module+0xRVA`) and the absolute target it points at, so a click can navigate there.
+export interface OperandLabel {
+    text: string;
+    target: string;
+    /** True when the target lands in a mapped module (a real code/data ref worth a click). */
+    navigable: boolean;
+}
+
+type LabelClick = (target: string, text: string) => void;
+
+// End-of-line widget rendering an operand annotation, e.g. `  ; sub_1a3f` or `  ; game.dll+0x28`.
+class LabelWidget extends WidgetType {
+    private readonly label: OperandLabel;
+    private readonly onClick: LabelClick;
+    constructor(label: OperandLabel, onClick: LabelClick) {
+        super();
+        this.label = label;
+        this.onClick = onClick;
+    }
+    override eq(other: LabelWidget): boolean {
+        return other.label.text === this.label.text && other.label.target === this.label.target;
+    }
+    override toDOM(): HTMLElement {
+        const span = document.createElement("span");
+        span.className = this.label.navigable ? "cm-operand-label nav" : "cm-operand-label";
+        span.textContent = `; ${this.label.text}`;
+        if (this.label.navigable) {
+            span.title = `go to ${this.label.target}`;
+            span.addEventListener("mousedown", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.onClick(this.label.target, this.label.text);
+            });
+        }
+        return span;
+    }
+    override ignoreEvent(): boolean {
+        return true;
+    }
+}
+
+// Labels are pushed as an effect (one entry per instruction line, null for lines with no
+// reference) and materialised into end-of-line widget decorations.
+const setLabels = StateEffect.define<(OperandLabel | null)[]>();
+
+function buildLabelDecorations(state: EditorState, labels: (OperandLabel | null)[], onClick: LabelClick): DecorationSet {
+    const builder = new RangeSetBuilder<Decoration>();
+    const lineCount = state.doc.lines;
+    for (let i = 0; i < labels.length && i < lineCount; i++) {
+        const label = labels[i];
+        if (!label) continue;
+        const line = state.doc.line(i + 1);
+        builder.add(line.to, line.to, Decoration.widget({ widget: new LabelWidget(label, onClick), side: 1 }));
+    }
+    return builder.finish();
+}
+
+function labelField(onClick: LabelClick): StateField<DecorationSet> {
+    return StateField.define<DecorationSet>({
+        create: () => Decoration.none,
+        update(deco, tr) {
+            for (const e of tr.effects) if (e.is(setLabels)) return buildLabelDecorations(tr.state, e.value, onClick);
+            return tr.docChanged ? deco.map(tr.changes) : deco;
+        },
+        provide: (f) => EditorView.decorations.from(f),
+    });
+}
+
+function makeExtensions(onLabelClick: LabelClick) {
+    return [
+        asmLanguage,
+        syntaxHighlighting(highlightStyle),
+        EditorView.editable.of(false),
+        EditorState.readOnly.of(true),
+        EditorView.lineWrapping,
+        theme,
+        labelField(onLabelClick),
+    ];
+}
 
 /** One instruction per line: `<address>  <disassembly text>`. */
 export function buildDoc(instructions: Instruction[]): string {
@@ -97,11 +172,21 @@ export function isComplete(address: string, size: number, instructions: Instruct
     return TERMINATOR.test(last.text.trimStart());
 }
 
-export function createEditor(parent: HTMLElement, doc: string): EditorView {
-    return new EditorView({ doc, extensions, parent });
+export function createEditor(
+    parent: HTMLElement,
+    doc: string,
+    labels: (OperandLabel | null)[],
+    onLabelClick: LabelClick,
+): EditorView {
+    const view = new EditorView({ doc, extensions: makeExtensions(onLabelClick), parent });
+    view.dispatch({ effects: setLabels.of(labels) });
+    return view;
 }
 
-/** Replace the entire document in one transaction (used when the function changes). */
-export function setDoc(view: EditorView, doc: string): void {
-    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: doc } });
+/** Replace the whole document and its operand labels in one transaction (function changed). */
+export function setContent(view: EditorView, doc: string, labels: (OperandLabel | null)[]): void {
+    view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: doc },
+        effects: setLabels.of(labels),
+    });
 }

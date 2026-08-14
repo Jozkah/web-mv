@@ -1,0 +1,212 @@
+- main [ref=f1e3]:
+  - generic [ref=f1e4]:
+    - navigation [ref=f1e5]:
+      - button "Signature scan" [ref=f1e6] [cursor=pointer]
+      - button "SigMaker" [ref=f1e10] [cursor=pointer]
+      - generic [ref=f1e12]:
+        - button "‹" [disabled] [ref=f1e13]
+        - button "›" [disabled] [ref=f1e14]
+        - button "Goto" [ref=f1e15] [cursor=pointer]
+    - generic [ref=f1e17]:
+      - generic [ref=f1e18]: pid 32344 · base 0x7ff64dba0000
+      - generic [ref=f1e19]: "server: open"
+      - generic [ref=f1e20]: "agent: up"
+      - generic "Extension agent (write / dump / exports / sections). Load web_mv_ext_agent.as to enable memory writing." [ref=f1e21]: "ext: down"
+  - generic [ref=f1e25]:
+    - generic [ref=f1e26]:
+      - tablist "Open tabs" [ref=f1e27]:
+        - tab "Class1 Close Class1" [selected] [ref=f1e28] [cursor=pointer]:
+          - generic [ref=f1e33]: Class1
+          - button "Close Class1" [ref=f1e34]
+        - tab "Modules Close Modules" [ref=f1e36] [cursor=pointer]:
+          - generic [ref=f1e42]: Modules
+          - button "Close Modules" [ref=f1e43]
+        - tab "Strings Close Strings" [ref=f1e45] [cursor=pointer]:
+          - generic [ref=f1e49]: Strings
+          - button "Close Strings" [ref=f1e50]
+      - button "Open new tab" [ref=f1e55] [cursor=pointer]
+    - generic [ref=f1e59]:
+      - complementary [ref=f1e60]:
+        - generic [ref=f1e61]:
+          - generic [ref=f1e62]: CLASSES (1)
+          - button "c++" [ref=f1e63] [cursor=pointer]
+          - button "+" [ref=f1e64] [cursor=pointer]
+        - generic [ref=f1e66] [cursor=pointer]:
+          - generic [ref=f1e67]: Class1
+          - button "✎" [ref=f1e68]
+      - generic [ref=f1e69]:
+        - generic [ref=f1e70]:
+          - generic [ref=f1e71]: Address (Class1)
+          - textbox "0x0000000000000000" [ref=f1e73]
+        - generic [ref=f1e74]:
+          - generic [ref=f1e75]:
+            - generic [ref=f1e76]:
+              - generic [ref=f1e77]: offset
+              - generic [ref=f1e78]: address
+              - generic [ref=f1e79]: bytes
+              - generic [ref=f1e80]: name
+              - generic [ref=f1e81]: type
+              - generic [ref=f1e82]: value
+            - generic [ref=f1e84]:
+              - generic [ref=f1e86] [cursor=pointer]:
+                - generic [ref=f1e87]: "0000"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e90]
+                - generic [ref=f1e91]: "-"
+              - generic [ref=f1e94] [cursor=pointer]:
+                - generic [ref=f1e95]: "0008"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e98]
+                - generic [ref=f1e99]: "-"
+              - generic [ref=f1e102] [cursor=pointer]:
+                - generic [ref=f1e103]: "0010"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e106]
+                - generic [ref=f1e107]: "-"
+              - generic [ref=f1e110] [cursor=pointer]:
+                - generic [ref=f1e111]: "0018"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e114]
+                - generic [ref=f1e115]: "-"
+              - generic [ref=f1e118] [cursor=pointer]:
+                - generic [ref=f1e119]: "0020"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e122]
+                - generic [ref=f1e123]: "-"
+              - generic [ref=f1e126] [cursor=pointer]:
+                - generic [ref=f1e127]: "0028"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e130]
+                - generic [ref=f1e131]: "-"
+              - generic [ref=f1e134] [cursor=pointer]:
+                - generic [ref=f1e135]: "0030"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e138]
+                - generic [ref=f1e139]: "-"
+              - generic [ref=f1e142] [cursor=pointer]:
+                - generic [ref=f1e143]: "0038"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e146]
+                - generic [ref=f1e147]: "-"
+              - generic [ref=f1e150] [cursor=pointer]:
+                - generic [ref=f1e151]: "0040"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e154]
+                - generic [ref=f1e155]: "-"
+              - generic [ref=f1e158] [cursor=pointer]:
+                - generic [ref=f1e159]: "0048"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e162]
+                - generic [ref=f1e163]: "-"
+              - generic [ref=f1e166] [cursor=pointer]:
+                - generic [ref=f1e167]: "0050"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e170]
+                - generic [ref=f1e171]: "-"
+              - generic [ref=f1e174] [cursor=pointer]:
+                - generic [ref=f1e175]: "0058"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e178]
+                - generic [ref=f1e179]: "-"
+              - generic [ref=f1e182] [cursor=pointer]:
+                - generic [ref=f1e183]: "0060"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e186]
+                - generic [ref=f1e187]: "-"
+              - generic [ref=f1e190] [cursor=pointer]:
+                - generic [ref=f1e191]: "0068"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e194]
+                - generic [ref=f1e195]: "-"
+              - generic [ref=f1e198] [cursor=pointer]:
+                - generic [ref=f1e199]: "0070"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e202]
+                - generic [ref=f1e203]: "-"
+              - generic [ref=f1e206] [cursor=pointer]:
+                - generic [ref=f1e207]: "0078"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e210]
+                - generic [ref=f1e211]: "-"
+              - generic [ref=f1e214] [cursor=pointer]:
+                - generic [ref=f1e215]: "0080"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e218]
+                - generic [ref=f1e219]: "-"
+              - generic [ref=f1e222] [cursor=pointer]:
+                - generic [ref=f1e223]: "0088"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e226]
+                - generic [ref=f1e227]: "-"
+              - generic [ref=f1e230] [cursor=pointer]:
+                - generic [ref=f1e231]: "0090"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e234]
+                - generic [ref=f1e235]: "-"
+              - generic [ref=f1e238] [cursor=pointer]:
+                - generic [ref=f1e239]: "0098"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e242]
+                - generic [ref=f1e243]: "-"
+              - generic [ref=f1e246] [cursor=pointer]:
+                - generic [ref=f1e247]: 00A0
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e250]
+                - generic [ref=f1e251]: "-"
+              - generic [ref=f1e254] [cursor=pointer]:
+                - generic [ref=f1e255]: 00A8
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e258]
+                - generic [ref=f1e259]: "-"
+              - generic [ref=f1e262] [cursor=pointer]:
+                - generic [ref=f1e263]: 00B0
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e266]
+                - generic [ref=f1e267]: "-"
+              - generic [ref=f1e270] [cursor=pointer]:
+                - generic [ref=f1e271]: 00B8
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e274]
+                - generic [ref=f1e275]: "-"
+              - generic [ref=f1e278] [cursor=pointer]:
+                - generic [ref=f1e279]: 00C0
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e282]
+                - generic [ref=f1e283]: "-"
+              - generic [ref=f1e286] [cursor=pointer]:
+                - generic [ref=f1e287]: 00C8
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e290]
+                - generic [ref=f1e291]: "-"
+              - generic [ref=f1e294] [cursor=pointer]:
+                - generic [ref=f1e295]: 00D0
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e298]
+                - generic [ref=f1e299]: "-"
+              - generic [ref=f1e302] [cursor=pointer]:
+                - generic [ref=f1e303]: 00D8
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e306]
+                - generic [ref=f1e307]: "-"
+              - generic [ref=f1e310] [cursor=pointer]:
+                - generic [ref=f1e311]: "00E0"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e314]
+                - generic [ref=f1e315]: "-"
+              - generic [ref=f1e318] [cursor=pointer]:
+                - generic [ref=f1e319]: "00E8"
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e322]
+                - generic [ref=f1e323]: "-"
+              - generic [ref=f1e326] [cursor=pointer]:
+                - generic [ref=f1e327]: 00F0
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e330]
+                - generic [ref=f1e331]: "-"
+              - generic [ref=f1e334] [cursor=pointer]:
+                - generic [ref=f1e335]: 00F8
+                - generic "double-click to rename"
+                - button "untyped" [ref=f1e338]
+                - generic [ref=f1e339]: "-"
+          - paragraph [ref=f1e341]: enter an address to read memory
+        - generic [ref=f1e342]: 32 nodes · 256 bytes · 0 selected

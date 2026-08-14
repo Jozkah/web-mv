@@ -20,7 +20,14 @@ import { MemoryFooter } from "./components/MemoryFooter";
 // never touches the network. The poll reads the new region in the background and supersedes any
 // in-flight read on a switch (see useMemorySnapshot), so it can't block or stall the UI.
 
-export function MemoryView(props?: { classId?: string }) {
+export function MemoryView(props: {
+    classId?: string;
+    tabId?: string;
+    /** True when this view is in the focused group - only then does it drive global selection. */
+    canBind?: boolean;
+    onBindClass?: (classId: string) => void;
+    onTitle?: (title: string) => void;
+}) {
     const app = useApp();
     const memory = useMemory();
 
@@ -33,6 +40,32 @@ export function MemoryView(props?: { classId?: string }) {
     const nodes = () => activeClass()?.nodes ?? [];
     const baseAddress = () => activeClass()?.address ?? "";
     const size = () => totalSize(nodes());
+
+    // Tab binding. A memory tab remembers which class it shows. While this tab is focused, the
+    // global selection (which the sidebar, address bar, and node edits all target) is kept pointed
+    // at this tab's class - and picking a different class in the sidebar re-binds the tab to it.
+    // An unfocused side-by-side memory tab just displays its own class without touching selection.
+    createEffect(() => {
+        if (!props?.canBind) return;
+        const bound = props.classId;
+        if (bound && memory.classes.some((c) => c.id === bound)) {
+            untrack(() => {
+                if (memory.activeId !== bound) memory.selectClass(bound);
+            });
+        }
+    });
+    createEffect(() => {
+        if (!props?.canBind) return;
+        const gid = memory.activeId;
+        const bound = untrack(() => props.classId);
+        if (gid && gid !== bound) props.onBindClass?.(gid);
+    });
+
+    // Keep the tab's title in sync with the class it shows (e.g. "PlayerManager").
+    createEffect(() => {
+        const c = activeClass();
+        if (c && props?.onTitle) props.onTitle(c.name);
+    });
 
     const enabled = () => app.attached();
     const poll = useMemorySnapshot(app.client, activeClass, enabled);
@@ -100,10 +133,15 @@ export function MemoryView(props?: { classId?: string }) {
     };
 
     // Re-guess on each fresh snapshot. untrack keeps it from subscribing to the node/active-class
-    // reads it makes; typed tiles drop out of the plan, so steady state is a cheap no-op.
+    // reads it makes; typed tiles drop out of the plan, so steady state is a cheap no-op. Then
+    // auto-grow the class when live data has reached its tail (bounded, see autoGrowActiveClass) so
+    // a struct extends itself as fields are discovered - the in-place analogue of follow-pointer.
     createEffect(() => {
         poll.data();
-        untrack(() => void autoGuess());
+        untrack(() => {
+            void autoGuess();
+            memory.autoGrowActiveClass();
+        });
     });
 
     return (

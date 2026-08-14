@@ -80,3 +80,73 @@ export function disassemble(
     // decodes exactly the function rather than a default-length window.
     return client.request(RequestType.Disassemble, { ...req }, schemas.disassembleResult);
 }
+
+// --- Extension agent (write-family). Routed to /agent-ext by the relay. ------
+// Same AxClient / relay socket as everything above — the split is transparent to callers.
+
+export function write(client: AxClient, req: t.WriteRequest): Promise<t.WriteResult> {
+    return client.request(RequestType.Write, { ...req }, schemas.writeResult);
+}
+
+export function dump(client: AxClient, req: t.DumpRequest = {}): Promise<t.DumpResult> {
+    // A full-module dump walks the whole mapped image; give it the slow ceiling.
+    return client.request(RequestType.Dump, { ...req }, schemas.dumpResult, SLOW_TIMEOUT_MS);
+}
+
+export function exports(client: AxClient, req: t.ExportsRequest = {}): Promise<t.ExportsResult> {
+    return client.request(RequestType.Exports, { ...req }, schemas.exportsResult, SLOW_TIMEOUT_MS);
+}
+
+export function imports(client: AxClient, req: t.ImportsRequest = {}): Promise<t.ImportsResult> {
+    return client.request(RequestType.Imports, { ...req }, schemas.importsResult, SLOW_TIMEOUT_MS);
+}
+
+export function iatRebuild(client: AxClient, req: t.IatRebuildRequest = {}): Promise<t.IatRebuildResult> {
+    return client.request(RequestType.IatRebuild, { ...req }, schemas.iatRebuildResult, SLOW_TIMEOUT_MS);
+}
+
+export function sections(client: AxClient, req: t.SectionsRequest = {}): Promise<t.SectionsResult> {
+    return client.request(RequestType.Sections, { ...req }, schemas.sectionsResult);
+}
+
+export function regions(client: AxClient, req: t.RegionsRequest = {}): Promise<t.RegionsResult> {
+    return client.request(RequestType.Regions, { ...req }, schemas.regionsResult, SLOW_TIMEOUT_MS);
+}
+
+export function scanNew(client: AxClient, req: t.ScanNewRequest): Promise<t.ScanNewResult> {
+    return client.request(RequestType.ScanNew, { ...req }, schemas.scanNewResult, SLOW_TIMEOUT_MS);
+}
+
+export function scanFilter(client: AxClient, req: t.ScanFilterRequest): Promise<t.ScanFilterResult> {
+    return client.request(RequestType.ScanFilter, { ...req }, schemas.scanFilterResult, SLOW_TIMEOUT_MS);
+}
+
+export function scanClear(client: AxClient): Promise<t.ScanClearResult> {
+    return client.request(RequestType.ScanClear, {}, schemas.scanClearResult);
+}
+
+export function peHeader(client: AxClient, req: t.PeHeaderRequest = {}): Promise<t.PeHeaderResult> {
+    return client.request(RequestType.PeHeader, { ...req }, schemas.peHeaderResult);
+}
+
+export function peDirs(client: AxClient, req: t.PeDirsRequest = {}): Promise<t.PeDirsResult> {
+    return client.request(RequestType.PeDirs, { ...req }, schemas.peDirsResult);
+}
+
+export function resourceTree(
+    client: AxClient,
+    req: t.ResourceTreeRequest = {},
+): Promise<t.ResourceTreeResult> {
+    return client.request(RequestType.ResourceTree, { ...req }, schemas.resourceTreeResult, SLOW_TIMEOUT_MS);
+}
+
+export function scanGrouped(
+    client: AxClient,
+    req: t.ScanGroupedRequest = {},
+): Promise<t.ScanGroupedResult> {
+    return client.request(RequestType.ScanGrouped, { ...req }, schemas.scanGroupedResult);
+}
+
+export function rawScan(client: AxClient, req: t.RawScanRequest): Promise<t.RawScanResult> {
+    return client.request(RequestType.RawScan, { ...req }, schemas.rawScanResult, SLOW_TIMEOUT_MS);
+}

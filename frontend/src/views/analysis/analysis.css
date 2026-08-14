@@ -1,0 +1,279 @@
+/* Analysis workbench: a three-column layout of panels (call graph, CFG, operand search,
+   function stats) over the current static selection. Reuses the shared panel/list/addr
+   vocabulary from ui/panels.css; this file only adds the analysis-specific pieces. */
+
+.analysis-view {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    box-sizing: border-box;
+}
+
+.analysis-col {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+}
+.analysis-col-narrow {
+    flex: 0 0 280px;
+}
+
+.ana-panel {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Shared node / hit / instruction rows -------------------------------------------------- */
+
+.ana-node,
+.ana-hit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font: inherit;
+    color: var(--text);
+    cursor: pointer;
+}
+.ana-node:hover,
+.ana-hit:hover {
+    background: var(--accent-bg);
+    color: var(--text-h);
+}
+.ana-node-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.addr {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+}
+.ana-ins-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.dim {
+    color: var(--text);
+    opacity: 0.7;
+    font-size: 12px;
+}
+
+.ana-empty {
+    padding: 6px 8px;
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+/* Call graph ---------------------------------------------------------------------------- */
+
+.ana-callgraph {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.ana-cg-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.ana-cg-head {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text);
+    opacity: 0.8;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2px;
+}
+.ana-index-prompt {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 6px 8px;
+    align-items: flex-start;
+}
+.ana-build-btn {
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 3px 10px;
+    border: 1px solid var(--accent-border);
+    border-radius: 4px;
+    background: var(--accent-bg);
+    color: var(--text-h);
+}
+.ana-progress {
+    font-size: 12px;
+    font-family: var(--mono);
+}
+
+/* Control-flow graph -------------------------------------------------------------------- */
+
+.ana-cfg {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 8px;
+}
+.ana-block {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--code-bg);
+}
+.ana-block-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    background: transparent;
+    padding: 4px 8px;
+    font: inherit;
+    color: var(--text-h);
+    cursor: pointer;
+}
+.ana-block-head:hover {
+    background: var(--accent-bg);
+}
+.ana-block-id {
+    font-family: var(--mono);
+    font-weight: 600;
+    color: var(--accent);
+}
+.ana-block-body {
+    padding: 4px 8px;
+}
+.ana-ins {
+    display: flex;
+    gap: 10px;
+    padding: 1px 0;
+}
+.ana-block-edges {
+    padding: 4px 8px;
+    border-top: 1px dashed var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+}
+.ana-edge {
+    color: var(--accent);
+}
+
+/* Operand search ------------------------------------------------------------------------ */
+
+.ana-search-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+}
+.ana-seg {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.ana-seg button {
+    font: inherit;
+    font-size: 12px;
+    padding: 3px 10px;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+}
+.ana-seg button.active {
+    background: var(--accent-bg);
+    color: var(--text-h);
+}
+.ana-search-input {
+    flex: 1 1 160px;
+    min-width: 120px;
+    font: inherit;
+    font-size: 13px;
+    font-family: var(--mono);
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text-h);
+}
+.ana-search-results {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Function stats ------------------------------------------------------------------------ */
+
+.ana-stats {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 10px;
+}
+.ana-stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+}
+.ana-stat {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    padding: 3px 0;
+}
+.ana-stat-k {
+    font-size: 12px;
+    opacity: 0.8;
+}
+.ana-stat-v {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-h);
+}
+.ana-coverage-track {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--border);
+    overflow: hidden;
+}
+.ana-coverage-fill {
+    height: 100%;
+    background: var(--accent);
+}
+.ana-largest {
+    border: 1px solid var(--border);
+}

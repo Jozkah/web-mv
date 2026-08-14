@@ -1,0 +1,50 @@
+- main [ref=e3]:
+  - generic [ref=e4]:
+    - navigation [ref=e5]:
+      - button "Signature scan" [ref=e6] [cursor=pointer]
+      - button "SigMaker" [ref=e10] [cursor=pointer]
+      - generic [ref=e12]:
+        - button "‹" [disabled] [ref=e13]
+        - button "›" [disabled] [ref=e14]
+        - button "Goto" [ref=e15] [cursor=pointer]
+    - generic [ref=e17]:
+      - generic [ref=e18]: pid 32344 · base 0x7ff64dba0000
+      - generic [ref=e19]: "server: open"
+      - generic [ref=e20]: "agent: up"
+      - generic "Extension agent (write / dump / exports / sections). Load web_mv_ext_agent.as to enable memory writing." [ref=e21]: "ext: down"
+  - generic [ref=e25]:
+    - generic [ref=e26]:
+      - tablist "Open tabs" [ref=e27]:
+        - tab "Class1 Close Class1" [selected] [ref=e28] [cursor=pointer]:
+          - generic [ref=e33]: Class1
+          - button "Close Class1" [ref=e34]
+        - tab "Modules Close Modules" [ref=e36] [cursor=pointer]:
+          - generic [ref=e42]: Modules
+          - button "Close Modules" [ref=e43]
+        - tab "Strings Close Strings" [ref=e45] [cursor=pointer]:
+          - generic [ref=e49]: Strings
+          - button "Close Strings" [ref=e50]
+      - button "Open new tab" [ref=e55] [cursor=pointer]
+    - generic [ref=e59]:
+      - complementary [ref=e60]:
+        - generic [ref=e61]:
+          - generic [ref=e62]: CLASSES (1)
+          - button "c++" [ref=e63] [cursor=pointer]
+          - button "+" [ref=e64] [cursor=pointer]
+        - generic [ref=e66] [cursor=pointer]:
+          - generic [ref=e67]: Class1
+          - button "✎" [ref=e68]
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - generic [ref=e71]: Address (Class1)
+          - textbox "0x0000000000000000" [ref=e73]
+        - generic [ref=e74]:
+          - generic [ref=e76]:
+            - generic [ref=e77]: offset
+            - generic [ref=e78]: address
+            - generic [ref=e79]: bytes
+            - generic [ref=e80]: name
+            - generic [ref=e81]: type
+            - generic [ref=e82]: value
+          - paragraph [ref=e85]: enter an address to read memory
+        - generic [ref=e86]: 32 nodes · 256 bytes · 0 selected

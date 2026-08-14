@@ -1,0 +1,60 @@
+.hex-view {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    padding: 10px 12px;
+    gap: 10px;
+}
+
+.hex-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.hex-input {
+    background: var(--panel-2, #1b1f27);
+    border: 1px solid var(--border, #333a45);
+    color: var(--text, #e6e9ef);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+.hex-input.hex-addr { width: 160px; font-family: ui-monospace, monospace; }
+.hex-input.hex-size { width: 70px; font-family: ui-monospace, monospace; }
+.hex-input.hex-byte { width: 44px; font-family: ui-monospace, monospace; text-align: center; }
+
+.hex-btn {
+    background: var(--accent, #2b6cff);
+    color: #fff; border: none; border-radius: 4px;
+    padding: 5px 10px; font-size: 12px; cursor: pointer;
+}
+.hex-btn:hover { filter: brightness(1.1); }
+.hex-btn:disabled { opacity: 0.5; cursor: default; }
+.hex-btn.small { padding: 3px 8px; }
+
+.hex-note { color: var(--muted, #8a93a3); font-size: 11px; }
+.hex-warn { color: #f5a623; font-size: 11px; }
+
+.hex-grid {
+    flex: 1 1 auto;
+    overflow: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+}
+.hex-row { display: flex; gap: 12px; white-space: pre; }
+.hex-off { color: var(--muted, #8a93a3); }
+.hex-cells { color: var(--text, #e6e9ef); }
+.hex-cell { padding: 0 2px; cursor: pointer; border-radius: 2px; }
+.hex-cell:hover { background: rgba(255, 255, 255, 0.08); }
+.hex-cell.sel { background: var(--accent, #2b6cff); color: #fff; }
+.hex-cell.empty { cursor: default; color: #444; }
+.hex-ascii { color: #7ee787; }
+
+.hex-edit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border, #333a45);
+}
+.hex-edit .mono { font-family: ui-monospace, monospace; }

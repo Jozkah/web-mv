@@ -1,7 +1,8 @@
 import { For, Show, createMemo, createSignal } from "solid-js";
 import { useApp } from "../app/AppContext";
+import { useNavigation } from "../app/useNavigation";
 import { useStatic } from "../views/static/state/StaticContext";
-import { useMemory } from "../views/memory/state/MemoryContext";
+import { resolveLabel } from "../state/labels";
 import { resolveRelative, sigScanIda } from "../protocol/requests";
 import { StatusOverlay } from "../ui/StatusOverlay";
 import { errorText } from "../state/errors";
@@ -27,9 +28,9 @@ type Result =
     | { status: "done"; hits: string[] };
 
 export function ScanCard(props: { kind: ScanKind; onClose: () => void }) {
-    const { client, attached, modules, annotations, history, setActiveView } = useApp();
+    const { client, attached, modules, annotations, history } = useApp();
+    const nav = useNavigation();
     const staticState = useStatic();
-    const memory = useMemory();
 
     const [pattern, setPattern] = createSignal(""); // IDA sig / string text
     const [scope, setScope] = createSignal(""); // a scan must target a module; "" = none picked yet
@@ -115,15 +116,13 @@ export function ScanCard(props: { kind: ScanKind; onClose: () => void }) {
 
     // View function in Static View disassembly
     const viewFunction = (hitAddress: string) => {
-        setActiveView("static");
-        staticState.openAddress(hitAddress);
+        nav.goto("static", hitAddress, resolveLabel(hitAddress, modules.list()));
         props.onClose();
     };
 
     // A hit address spawns a memory class pointed at it
     const createClass = (address: string) => {
-        memory.addClassAt(address);
-        setActiveView("memory");
+        nav.goto("memory", address, resolveLabel(address, modules.list()));
         props.onClose();
     };
 
@@ -305,6 +304,9 @@ export function ScanCard(props: { kind: ScanKind; onClose: () => void }) {
                         {(hit) => (
                             <div class="row scan-hit">
                                 <span class="addr">{hit.hitAddress}</span>
+                                <Show when={resolveLabel(hit.hitAddress, modules.list()) !== hit.hitAddress}>
+                                    <span class="hit-label mono">{resolveLabel(hit.hitAddress, modules.list())}</span>
+                                </Show>
                                 <Show
                                     when={hit.function}
                                     fallback={<span class="fn-badge unmapped">unmapped</span>}

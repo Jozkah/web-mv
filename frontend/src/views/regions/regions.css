@@ -1,0 +1,73 @@
+/* Memory-map (regions) view. Builds on pe.css table styling. */
+
+.rg-body {
+    flex: 1 1 auto;
+    overflow: auto;
+    min-height: 0;
+}
+
+.rg-filters {
+    display: inline-flex;
+    gap: 2px;
+    margin-left: 4px;
+}
+
+.rg-filter {
+    font: inherit;
+    font-size: 12px;
+    padding: 3px 9px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.rg-filter.active {
+    border-color: var(--accent-border);
+    background: var(--accent-bg);
+    color: var(--accent);
+}
+
+.rg-table {
+    width: 100%;
+}
+
+.rg-table td.prot {
+    letter-spacing: 1px;
+}
+
+.rg-table tr.rg-exec td.prot {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.rg-jump-col {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.rg-jump {
+    white-space: nowrap;
+}
+
+.rg-jump button {
+    font: inherit;
+    font-size: 13px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+    opacity: 0.75;
+}
+
+.rg-jump button:hover {
+    opacity: 1;
+}
+
+.rg-empty {
+    padding: 20px;
+    color: var(--text);
+    opacity: 0.6;
+    font-size: 13px;
+}

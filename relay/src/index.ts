@@ -1,9 +1,9 @@
 import { dirname, join, normalize } from "path";
-import { activeAgentCount, callAgent, handlers, noteClient, type Role, type SocketData } from "./relay";
+import { activeAgentCount, agentConnected, callAgent, extConnected, handlers, noteClient, type Role, type SocketData } from "./relay";
 
 // Local control channel into a process's memory - never bind to anything but loopback.
 const HOSTNAME = "127.0.0.1";
-const PORT = Number(process.env.PORT ?? 8080);
+const PORT = Number(process.env.PORT ?? 9000);
 
 // Ceiling for a single POST /rpc call. Generous so a slow point read or a single-threaded
 // agent busy behind other callers still completes, but bounded so a wedged agent doesn't
@@ -61,7 +61,7 @@ async function handleRpc(req: Request): Promise<Response> {
 // The built frontend (frontend/dist) copied next to the executable as ./public. Resolved from
 // the executable's own location so it works no matter where the launcher sets the working dir;
 // override with UI_DIR when running from source. Serving the UI here keeps the whole tool to a
-// single process and a single port - the browser loads from http://127.0.0.1:8080 and reaches
+// single process and a single port - the browser loads from http://127.0.0.1:9000 and reaches
 // the /ui websocket on that same origin (see frontend config).
 const UI_DIR = process.env.UI_DIR ?? join(dirname(process.execPath), "public");
 
@@ -92,11 +92,21 @@ const server = Bun.serve({
 
         // Liveness for the UI's "agents" badge: how many RPC callers are currently active.
         if (pathname === "/status") {
-            return jsonResponse(JSON.stringify({ agents: activeAgentCount() }), 200);
+            return jsonResponse(
+                JSON.stringify({
+                    agents: activeAgentCount(),
+                    agent: agentConnected(),
+                    ext: extConnected(),
+                }),
+                200,
+            );
         }
 
         const role: Role | null =
-            pathname === "/agent" ? "agent" : pathname === "/ui" ? "ui" : null;
+            pathname === "/agent" ? "agent"
+            : pathname === "/agent-ext" ? "agent-ext"
+            : pathname === "/ui" ? "ui"
+            : null;
 
         // The two websocket endpoints upgrade; everything else is the static UI.
         if (role) {
@@ -114,3 +124,4 @@ const server = Bun.serve({
 console.log(`running at: http://${server.hostname}:${server.port}  (open this in a browser)`);
 console.log(`agent runs at: ws://localhost:${server.port}/agent`);
 console.log(`rpc runs at:   POST http://${server.hostname}:${server.port}/rpc  (many concurrent callers)`);
+

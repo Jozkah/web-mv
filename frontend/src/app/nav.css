@@ -1,0 +1,119 @@
+/* Back/forward nav buttons in the top bar, and the Goto (Ctrl+G) modal. */
+
+.nav-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.nav-controls .nav-arrow {
+    min-width: 30px;
+    justify-content: center;
+    padding: 6px 8px;
+}
+
+.nav-controls button:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.goto-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 14vh;
+    z-index: 500;
+}
+
+.goto-dialog {
+    width: min(560px, 92vw);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.goto-dialog h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-h);
+}
+
+.goto-dialog input {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 9px 11px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--code-bg);
+    color: var(--text-h);
+    outline: none;
+}
+
+.goto-dialog input:focus {
+    border-color: var(--accent-border);
+}
+
+.goto-preview {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    min-height: 18px;
+}
+
+.goto-preview.ok {
+    color: var(--text);
+}
+
+.goto-preview.bad {
+    color: #ef4444;
+}
+
+.goto-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.goto-actions .goto-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.goto-dialog button {
+    font: inherit;
+    font-size: 13px;
+    padding: 7px 13px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-h);
+    cursor: pointer;
+}
+
+.goto-dialog button.primary {
+    border-color: var(--accent-border);
+    background: var(--accent-bg);
+    color: var(--accent);
+}
+
+.goto-dialog button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.goto-hint {
+    font-size: 11.5px;
+    color: var(--text);
+    opacity: 0.7;
+}

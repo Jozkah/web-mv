@@ -1,0 +1,229 @@
+.dt-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    gap: 12px;
+    overflow: hidden;
+}
+
+.dt-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.dt-toolbar-spacer {
+    flex: 1 1 auto;
+}
+
+.dt-tabs {
+    display: flex;
+    gap: 4px;
+}
+
+.dt-tab-btn {
+    background: var(--bg-panel-head, #1e1e28);
+    color: var(--fg-muted, #9a9aab);
+    border: 1px solid var(--border-color, #2a2a36);
+    border-radius: 6px;
+    padding: 6px 14px;
+    cursor: pointer;
+}
+
+.dt-tab-btn.active {
+    background: var(--accent, #4f7cff);
+    color: #fff;
+    border-color: var(--accent, #4f7cff);
+}
+
+.dt-btn {
+    background: var(--bg-panel-head, #1e1e28);
+    color: var(--fg-main, #e1e1e8);
+    border: 1px solid var(--border-color, #2a2a36);
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.dt-btn:hover {
+    border-color: var(--accent, #4f7cff);
+}
+
+.dt-btn-sm {
+    padding: 3px 8px;
+    font-size: 12px;
+}
+
+.dt-import-error {
+    color: #ff6b6b;
+    font-size: 13px;
+    padding: 4px 2px;
+}
+
+.dt-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dt-card {
+    background: var(--bg-panel, #18181f);
+    border: 1px solid var(--border-color, #2a2a36);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.dt-card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dt-name-input {
+    flex: 1 1 auto;
+    background: var(--bg-input, #121218);
+    color: var(--fg-main, #e1e1e8);
+    border: 1px solid var(--border-color, #2a2a36);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-weight: 600;
+}
+
+.dt-size-tag {
+    font-size: 12px;
+    color: var(--fg-muted, #9a9aab);
+    font-family: monospace;
+    white-space: nowrap;
+}
+
+.dt-underlying {
+    background: var(--bg-input, #121218);
+    color: var(--fg-main, #e1e1e8);
+    border: 1px solid var(--border-color, #2a2a36);
+    border-radius: 6px;
+    padding: 4px 6px;
+}
+
+.dt-field-head {
+    display: grid;
+    grid-template-columns: 80px 1fr 220px 28px;
+    gap: 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--fg-muted, #9a9aab);
+    padding: 0 2px;
+}
+
+.dt-field-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 220px 28px;
+    gap: 8px;
+    align-items: center;
+}
+
+.dt-offset {
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--accent, #4f7cff);
+}
+
+.dt-field-name,
+.dt-member-val,
+.dt-seed-input {
+    background: var(--bg-input, #121218);
+    color: var(--fg-main, #e1e1e8);
+    border: 1px solid var(--border-color, #2a2a36);
+    border-radius: 6px;
+    padding: 4px 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.dt-field-type {
+    display: flex;
+    gap: 6px;
+}
+
+.dt-field-type select {
+    flex: 1 1 auto;
+    background: var(--bg-input, #121218);
+    color: var(--fg-main, #e1e1e8);
+    border: 1px solid var(--border-color, #2a2a36);
+    border-radius: 6px;
+    padding: 4px 6px;
+    min-width: 0;
+}
+
+.dt-len-input {
+    width: 64px;
+    background: var(--bg-input, #121218);
+    color: var(--fg-main, #e1e1e8);
+    border: 1px solid var(--border-color, #2a2a36);
+    border-radius: 6px;
+    padding: 4px 6px;
+}
+
+.dt-member-row {
+    display: grid;
+    grid-template-columns: 1fr 20px 120px 28px;
+    gap: 8px;
+    align-items: center;
+}
+
+.dt-eq {
+    text-align: center;
+    color: var(--fg-muted, #9a9aab);
+}
+
+.dt-seed-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.dt-seed-input {
+    flex: 1 1 auto;
+}
+
+.dt-icon-btn {
+    background: transparent;
+    color: var(--fg-muted, #9a9aab);
+    border: none;
+    border-radius: 6px;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.dt-icon-btn:hover {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.12);
+}
+
+.dt-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 48px 12px;
+    color: var(--fg-muted, #9a9aab);
+    text-align: center;
+}
+
+.dt-empty-icon {
+    font-size: 36px;
+}

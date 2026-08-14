@@ -1,7 +1,9 @@
 import { For, Show, createMemo } from "solid-js";
 import { useApp } from "../../app/AppContext";
+import { useNavigation } from "../../app/useNavigation";
 import { useStrings } from "./state/StringsContext";
-import { useMemory } from "../memory/state/MemoryContext";
+import { resolveLabel } from "../../state/labels";
+import { useStatic } from "../static/state/StaticContext";
 import { StatusOverlay } from "../../ui/StatusOverlay";
 import { ModulePicker } from "../../scan/ModulePicker";
 import { createListVirtualizer } from "../../ui/virtualList";
@@ -17,7 +19,19 @@ const ROW_HEIGHT = 28;
 export function StringsView() {
     const app = useApp();
     const strings = useStrings();
-    const memory = useMemory();
+    const nav = useNavigation();
+    const staticCtx = useStatic();
+
+    // Pivot from a string to the function(s) that reference its address: build/consult the
+    // module xref index in the static view, jump to the first referencing function, and
+    // switch the workspace to the Modules tab. Resolution is async (may build the index), so
+    // we flip tabs immediately and let the static view update once it lands.
+    const pivotXref = (address: string) => {
+        const modName = strings.selectedModule();
+        if (!modName) return;
+        staticCtx.pivotAddressXref(modName, address);
+        app.setActiveView("static");
+    };
 
     const canScan = () =>
         app.attached() && strings.selectedModule() !== "" && strings.status() !== "scanning";
@@ -29,10 +43,7 @@ export function StringsView() {
         strings.scan(modName, mod.base, mod.size);
     };
 
-    const createClass = (address: string) => {
-        memory.addClassAt(address);
-        app.setActiveView("memory");
-    };
+    const createClass = (address: string) => nav.goto("memory", address, resolveLabel(address, app.modules.list()));
 
     const count = createMemo(() => strings.filteredStrings().length);
     const { setRef, virtualizer } = createListVirtualizer(count, ROW_HEIGHT);
@@ -282,8 +293,30 @@ export function StringsView() {
                                                     </span>
                                                 </span>
                                                 <span class="strings-col strings-col-value">
-                                                    {entry().value}
+                                                    <span class="strings-value-text">{entry().value}</span>
+                                                    <button
+                                                        class="strings-xref-btn"
+                                                        title="find functions that reference this string"
+                                                        disabled={!strings.selectedModule() || staticCtx.xrefPending()}
+                                                        onClick={(ev) => {
+                                                            ev.stopPropagation();
+                                                            pivotXref(entry().address);
+                                                        }}
+                                                    >
+                                                        {staticCtx.xrefPending() ? "…" : "xref →"}
+                                                    </button>
                                                 </span>
+                                                <button
+                                                    class="strings-pin"
+                                                    title="Bookmark this string"
+                                                    style={{ background: "transparent", border: "none", cursor: "pointer", opacity: 0.45, "font-size": "11px" }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        app.bookmarks.add(entry().address, entry().value.slice(0, 48));
+                                                    }}
+                                                >
+                                                    🔖
+                                                </button>
                                             </div>
                                         );
                                     }}

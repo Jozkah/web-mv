@@ -1,7 +1,7 @@
 import { createStore, produce } from "solid-js/store";
 import { createMemo } from "solid-js";
 import { defaultName } from "./address";
-import { load, persist } from "./persist";
+import { load, persistKeyed } from "./persist";
 
 // Client-side function annotations: rename + pin. The agent is read-only and has no
 // concept of names, so these live entirely here. Keyed by (module, RVA) so they
@@ -20,15 +20,19 @@ const compositeKey = (module: string, rva: string) => `${module}@${rva}`;
 // Persistence. The record is stored as a flat list (the key is derivable from module+rva), and
 // the keyed store is rebuilt from it on load. Entries are validated one by one so a single bad
 // row is dropped rather than discarding every annotation; a version bump discards the lot.
+// Annotations are namespaced per attached target (see workspaceKey.ts): the base key is suffixed
+// with the current workspace key so each target keeps its own renames/pins. keyFor() supplies that
+// suffix reactively; on a target switch the store is rebuilt from the new namespace's payload.
 const STORAGE_KEY = "ax.annotations";
-const STORAGE_VERSION = 1;
+const STORAGE_VERSION = 2;
 
-function hydrate(): Record<string, Annotation> {
-    const saved = load<Annotation[]>(STORAGE_KEY, STORAGE_VERSION);
+const storageKeyFor = (wsKey: string) => `${STORAGE_KEY}:${wsKey}`;
+
+function fromSaved(saved: unknown): Record<string, Annotation> {
     if (!Array.isArray(saved)) return {};
 
     const out: Record<string, Annotation> = {};
-    for (const a of saved) {
+    for (const a of saved as Annotation[]) {
         if (!a || typeof a.module !== "string" || typeof a.rva !== "string" || typeof a.pinned !== "boolean") continue;
         if (a.name !== undefined && typeof a.name !== "string") continue;
         if (!a.name && !a.pinned) continue; // an entry carrying nothing is junk - the same rule mutate() enforces
@@ -39,10 +43,28 @@ function hydrate(): Record<string, Annotation> {
     return out;
 }
 
-export function createAnnotations() {
-    const [store, setStore] = createStore<Record<string, Annotation>>(hydrate());
+export function createAnnotations(keyFor: () => string) {
+    const [store, setStore] = createStore<Record<string, Annotation>>(
+        fromSaved(load<Annotation[]>(storageKeyFor(keyFor()), STORAGE_VERSION)),
+    );
 
-    persist(STORAGE_KEY, STORAGE_VERSION, () => Object.values(store).map((a) => ({ ...a })));
+    // Replace the entire keyed store in one produce - drop the previous target's entries, then
+    // graft in the new target's (or nothing if it has none).
+    const replaceAll = (next: Record<string, Annotation>) => {
+        setStore(
+            produce((s) => {
+                for (const k of Object.keys(s)) delete s[k];
+                Object.assign(s, next);
+            }),
+        );
+    };
+
+    persistKeyed(
+        () => storageKeyFor(keyFor()),
+        STORAGE_VERSION,
+        () => Object.values(store).map((a) => ({ ...a })),
+        (loaded) => replaceAll(fromSaved(loaded)),
+    );
 
     const get = (module: string, rva: string): Annotation | undefined => store[compositeKey(module, rva)];
 

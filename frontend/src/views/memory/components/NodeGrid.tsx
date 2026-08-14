@@ -1,12 +1,16 @@
-import { For, Show, createMemo, createSignal, type Accessor } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal, type Accessor } from "solid-js";
+import { createStore, produce } from "solid-js/store";
 import { parseHex, toHex } from "../../../state/address";
 import { createListVirtualizer } from "../../../ui/virtualList";
+import { bytePairs, readString } from "../nodes/format";
 import { offsets } from "../nodes/layout";
-import { type Node } from "../nodes/types";
+import { isStringType, nodeByteSize, nodeNumericValue, nodeType, type Node } from "../nodes/types";
+import { buildCopyText, type CopyContext, type CopyFormat } from "../nodes/copy";
 import { useMemory } from "../state/MemoryContext";
 import type { MemorySnapshot } from "../state/useMemorySnapshot";
 import { NodeContextMenu } from "./NodeContextMenu";
 import { NodeRow } from "./NodeRow";
+import { PointerExpansion } from "./PointerExpansion";
 
 const ROW_HEIGHT = 30;
 
@@ -47,23 +51,80 @@ export function NodeGrid(props: {
         setMenu({ x, y, flip: e.clientX > window.innerWidth - MENU_REACH });
     };
 
-    // Absolute address of the lone selected node, for "Copy Address" (single selection only).
-    // undefined when the count isn't exactly one or the class has no base address yet.
-    const singleAddress = (): string | undefined => {
+    // Live target of a pointer node (for inline expansion), or undefined when it's null / unread.
+    const pointerTarget = (nodeId: string): string | undefined => {
+        const p = props.snapshot()?.pointers.get(nodeId);
+        return p && p.target !== "0x0" ? p.target : undefined;
+    };
+
+    // Build the "Copy as" context for the lone selected node: its layout (always available) plus
+    // its live value/bytes when a snapshot is in bounds. undefined unless exactly one is selected.
+    const copyContext = (): CopyContext | undefined => {
         const ids = memory.selectedNodeIds;
         if (ids.length !== 1) return undefined;
         const cls = memory.activeClass();
-        if (!cls || !cls.address) return undefined;
-        const nodes = cls.nodes;
-        const i = nodes.findIndex((n) => n.id === ids[0]);
+        if (!cls) return undefined;
+        const i = cls.nodes.findIndex((n) => n.id === ids[0]);
         if (i < 0) return undefined;
-        return toHex(parseHex(cls.address) + BigInt(offsets(nodes)[i]));
+        const node = cls.nodes[i];
+        const offset = offsets(cls.nodes)[i];
+        const size = nodeByteSize(node);
+        const address = cls.address ? toHex(parseHex(cls.address) + BigInt(offset)) : "";
+
+        let value: string | undefined;
+        let bytes: string | undefined;
+        const snap = props.snapshot();
+        if (snap && offset + size <= snap.view.byteLength) {
+            bytes = bytePairs(snap.view, offset, size);
+            value = isStringType(node.typeId)
+                ? readString(snap.view, offset, size, node.typeId === "wstring")
+                : nodeType(node.typeId).decode(snap.view, offset);
+        }
+        return { className: cls.name, node, offset, byteSize: size, address, baseAddress: cls.address, value, bytes };
     };
 
-    const copyAddress = () => {
-        const addr = singleAddress();
-        if (addr) void navigator.clipboard?.writeText(addr);
+    // Which copy formats currently have data - drives the submenu's disabled state.
+    const copyAvailable = (): Record<CopyFormat, boolean> => {
+        const ctx = copyContext();
+        const has = (f: CopyFormat) => (ctx ? buildCopyText(f, ctx) !== undefined : false);
+        return {
+            address: has("address"),
+            value: has("value"),
+            bytes: has("bytes"),
+            "pointer-path": has("pointer-path"),
+            offsetof: has("offsetof"),
+            reclass: has("reclass"),
+        };
     };
+
+    const doCopy = (format: CopyFormat) => {
+        const ctx = copyContext();
+        if (!ctx) return;
+        const text = buildCopyText(format, ctx);
+        if (text) void navigator.clipboard?.writeText(text);
+    };
+
+    // Per-node value history for the sparkline. Each poll appends every numeric node's current
+    // value (capped to a short window); non-numeric nodes are skipped. Keyed by node id so it
+    // survives reordering; stale ids from deleted nodes simply stop updating.
+    const [history, setHistory] = createStore<Record<string, number[]>>({});
+    createEffect(() => {
+        const snap = props.snapshot();
+        if (!snap) return;
+        const nodes = props.nodes();
+        const o = offsets(nodes);
+        setHistory(
+            produce((h) => {
+                for (let i = 0; i < nodes.length; i++) {
+                    const v = nodeNumericValue(snap.view, o[i], nodes[i].typeId);
+                    if (v === undefined) continue;
+                    const arr = h[nodes[i].id] ?? (h[nodes[i].id] = []);
+                    arr.push(v);
+                    if (arr.length > 48) arr.shift();
+                }
+            }),
+        );
+    });
 
     return (
         <div class="node-grid">
@@ -89,43 +150,60 @@ export function NodeGrid(props: {
                             const node = () => props.nodes()[item.index];
                             return (
                                 <Show when={node()}>
-                                    {(n) => (
-                                        <div
-                                            class="node-row-host"
-                                            style={{
-                                                position: "absolute",
-                                                top: 0,
-                                                left: 0,
-                                                width: "100%",
-                                                height: `${item.size}px`,
-                                                transform: `translateY(${item.start}px)`,
-                                            }}
-                                        >
-                                            <NodeRow
-                                                node={n()}
-                                                offset={offs()[item.index]}
-                                                baseAddress={props.baseAddress()}
-                                                snapshot={props.snapshot}
-                                                selected={memory.isSelected(n().id)}
-                                                editing={editingId() === n().id}
-                                                onSelect={(e) =>
-                                                    e.ctrlKey || e.metaKey
-                                                        ? memory.toggleNode(n().id)
-                                                        : memory.selectNode(n().id)
-                                                }
-                                                onChangeType={(typeId) => memory.setNodeType(item.index, typeId)}
-                                                onStartRename={() => setEditingId(n().id)}
-                                                onCommitRename={(name) => {
-                                                    memory.renameNode(item.index, name);
-                                                    setEditingId(null);
+                                    {(n) => {
+                                        // A pointer row's inline expansion grows the host past one row, so the
+                                        // host is measured (data-index + measureElement) instead of hard-set to
+                                        // the row height - the virtualizer then reserves the real height and the
+                                        // rows below shift down to make room. The base row keeps its fixed height.
+                                        const expanded = () => memory.isExpanded(n().id);
+                                        const target = () => pointerTarget(n().id);
+                                        return (
+                                            <div
+                                                class="node-row-host"
+                                                data-index={item.index}
+                                                ref={(el) => virtualizer.measureElement(el)}
+                                                style={{
+                                                    position: "absolute",
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: "100%",
+                                                    transform: `translateY(${item.start}px)`,
                                                 }}
-                                                onCancelRename={() => setEditingId(null)}
-                                                onContextMenu={(e) => openMenu(e, n().id)}
-                                                onDelete={() => memory.deleteNode(item.index)}
-                                                onFollow={(target, name) => memory.addClassAt(target, name)}
-                                            />
-                                        </div>
-                                    )}
+                                            >
+                                                <NodeRow
+                                                    node={n()}
+                                                    offset={offs()[item.index]}
+                                                    baseAddress={props.baseAddress()}
+                                                    snapshot={props.snapshot}
+                                                    history={history[n().id]}
+                                                    selected={memory.isSelected(n().id)}
+                                                    editing={editingId() === n().id}
+                                                    expanded={expanded()}
+                                                    onToggleExpand={() => memory.toggleExpanded(n().id)}
+                                                    onSelect={(e) =>
+                                                        e.ctrlKey || e.metaKey
+                                                            ? memory.toggleNode(n().id)
+                                                            : memory.selectNode(n().id)
+                                                    }
+                                                    onChangeType={(typeId) => memory.setNodeType(item.index, typeId)}
+                                                    onStartRename={() => setEditingId(n().id)}
+                                                    onCommitRename={(name) => {
+                                                        memory.renameNode(item.index, name);
+                                                        setEditingId(null);
+                                                    }}
+                                                    onCancelRename={() => setEditingId(null)}
+                                                    onContextMenu={(e) => openMenu(e, n().id)}
+                                                    onDelete={() => memory.deleteNode(item.index)}
+                                                    onFollow={(target, name) => memory.addClassAt(target, name)}
+                                                />
+                                                <Show when={expanded() && target()}>
+                                                    {(addr) => (
+                                                        <PointerExpansion address={addr()} path={n().id} depth={1} />
+                                                    )}
+                                                </Show>
+                                            </div>
+                                        );
+                                    }}
                                 </Show>
                             );
                         }}
@@ -140,13 +218,14 @@ export function NodeGrid(props: {
                         y={m().y}
                         flip={m().flip}
                         count={memory.selectedNodeIds.length}
-                        address={singleAddress()}
+                        copyAvailable={copyAvailable()}
                         onChangeType={(typeId) => memory.setSelectedType(typeId)}
                         onAddBytes={(bytes) => memory.addBytes(bytes)}
                         onInsertBytes={(bytes) => memory.insertBytesAboveSelection(bytes)}
                         onCreateClass={() => memory.createClassFromSelection()}
                         onDelete={() => memory.deleteSelected()}
-                        onCopyAddress={copyAddress}
+                        onRepeat={(n) => memory.repeatSelection(n)}
+                        onCopy={doCopy}
                         onClose={() => setMenu(null)}
                     />
                 )}

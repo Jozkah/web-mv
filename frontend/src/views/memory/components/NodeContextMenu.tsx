@@ -2,6 +2,7 @@ import { For, Show, createSignal } from "solid-js";
 import { Portal } from "solid-js/web";
 import { onDismiss } from "../../../ui/dismiss";
 import { NODE_TYPE_LIST, type NodeTypeId } from "../nodes/types";
+import type { CopyFormat } from "../nodes/copy";
 
 // Right-click menu for the selected node(s), shaped like ReClass: a vertical list whose first
 // entries fly a submenu out to the side. Top to bottom: Change Type (the primitives), Add Bytes
@@ -15,13 +16,25 @@ import { NODE_TYPE_LIST, type NodeTypeId } from "../nodes/types";
 // Preset byte amounts for Add / Insert, matching ReClass's common sizes.
 const BYTE_SIZES = [4, 8, 64, 256, 1024, 2048, 4096] as const;
 
+// The Copy submenu, in display order. Each carries its label; availability (a live value/bytes
+// need a snapshot, an address needs a class base) is passed in per-format so unusable rows dim.
+const COPY_FORMATS: readonly { id: CopyFormat; label: string }[] = [
+    { id: "address", label: "Address" },
+    { id: "value", label: "Value" },
+    { id: "bytes", label: "Bytes" },
+    { id: "pointer-path", label: "Pointer path" },
+    { id: "offsetof", label: "Offsetof" },
+    { id: "reclass", label: "ReClass member" },
+];
+
 export interface NodeMenuActions {
     onChangeType: (typeId: NodeTypeId) => void;
     onAddBytes: (bytes: number) => void;
     onInsertBytes: (bytes: number) => void;
     onCreateClass: () => void;
+    onRepeat: (times: number) => void;
     onDelete: () => void;
-    onCopyAddress: () => void;
+    onCopy: (format: CopyFormat) => void;
 }
 
 interface MenuProps extends NodeMenuActions {
@@ -29,14 +42,18 @@ interface MenuProps extends NodeMenuActions {
     y: number;
     flip: boolean;
     count: number;
-    address: string | undefined;
+    // Which copy formats have data to copy right now (single selection only).
+    copyAvailable: Record<CopyFormat, boolean>;
     onClose: () => void;
 }
 
 // The Add / Insert submenu: preset sizes plus a free-text amount. `verb` labels both the items
 // and the apply button ("Add" / "Insert"); `onPick` fires the action and closes the menu.
-function BytesSubmenu(props: { verb: string; onPick: (bytes: number) => void }) {
+const REPEAT_COUNTS = [2, 4, 8, 16, 32, 64] as const;
+
+function BytesSubmenu(props: { verb: string; onPick: (bytes: number) => void; presets?: readonly number[]; unit?: string }) {
     const [custom, setCustom] = createSignal("");
+    const unit = () => props.unit ?? " bytes";
 
     const applyCustom = () => {
         const n = Number.parseInt(custom(), 10);
@@ -45,10 +62,10 @@ function BytesSubmenu(props: { verb: string; onPick: (bytes: number) => void }) 
 
     return (
         <div class="node-submenu">
-            <For each={BYTE_SIZES}>
+            <For each={props.presets ?? BYTE_SIZES}>
                 {(n) => (
                     <button class="node-submenu-item" onClick={() => props.onPick(n)}>
-                        {props.verb} {n} bytes
+                        {props.verb} {n}{unit()}
                     </button>
                 )}
             </For>
@@ -130,16 +147,32 @@ export function NodeContextMenu(props: MenuProps) {
                     Create class from nodes
                 </button>
 
+                <div class="node-menu-item has-submenu">
+                    Repeat (array)
+                    <span class="submenu-arrow">▸</span>
+                    <BytesSubmenu verb="×" unit="" presets={REPEAT_COUNTS} onPick={(n) => run(() => props.onRepeat(n))} />
+                </div>
+
                 <div class="node-menu-sep" />
 
                 <Show when={props.count === 1}>
-                    <button
-                        class="node-menu-item"
-                        disabled={props.address === undefined}
-                        onClick={() => run(props.onCopyAddress)}
-                    >
-                        Copy address
-                    </button>
+                    <div class="node-menu-item has-submenu">
+                        Copy
+                        <span class="submenu-arrow">▸</span>
+                        <div class="node-submenu">
+                            <For each={COPY_FORMATS}>
+                                {(f) => (
+                                    <button
+                                        class="node-submenu-item"
+                                        disabled={!props.copyAvailable[f.id]}
+                                        onClick={() => run(() => props.onCopy(f.id))}
+                                    >
+                                        {f.label}
+                                    </button>
+                                )}
+                            </For>
+                        </div>
+                    </div>
                 </Show>
 
                 <button class="node-menu-item danger" onClick={() => run(props.onDelete)}>

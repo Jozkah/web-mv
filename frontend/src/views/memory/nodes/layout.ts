@@ -154,6 +154,22 @@ export function deleteNodes(nodes: readonly Node[], ids: Set<string>): Node[] {
     return nodes.filter((n) => !ids.has(n.id));
 }
 
+/** Repeat the selected nodes `times` more times, appending fresh copies right after the last
+ *  selected node - the "array of struct" convenience: select a struct's fields, repeat to N. */
+export function repeatNodes(nodes: readonly Node[], ids: Set<string>, times: number): Node[] {
+    if (times < 1) return nodes.slice();
+    const selected = nodes.filter((n) => ids.has(n.id));
+    if (selected.length === 0) return nodes.slice();
+    const lastIdx = nodes.findIndex((n) => n.id === selected[selected.length - 1].id);
+    const copies: Node[] = [];
+    for (let t = 0; t < times; t++) {
+        for (const n of selected) copies.push(createNode(n.typeId, n.name, n.length));
+    }
+    const out = nodes.slice();
+    out.splice(lastIdx + 1, 0, ...copies);
+    return out;
+}
+
 /** Index of the topmost (lowest-offset) node in `ids`, or -1 if none are present. */
 export function topIndexOf(nodes: readonly Node[], ids: Set<string>): number {
     for (let i = 0; i < nodes.length; i++) if (ids.has(nodes[i].id)) return i;

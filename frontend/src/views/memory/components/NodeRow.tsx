@@ -1,7 +1,7 @@
 import { For, Show, createMemo, type Accessor } from "solid-js";
 import { parseHex } from "../../../state/address";
-import { asciiPreview, bytePairs, diffSegments, hexPairs, readString } from "../nodes/format";
-import { isStringType, nodeByteSize, nodeType, type Node, type NodeTypeId } from "../nodes/types";
+import { asciiPreview, bytePairsDiff, diffSegments, hexPairs, readString } from "../nodes/format";
+import { isStringType, nodeByteSize, nodeType, sparklinePoints, type Node, type NodeTypeId } from "../nodes/types";
 import type { MemorySnapshot } from "../state/useMemorySnapshot";
 import { RenameInput } from "../../../ui/RenameInput";
 import { TypePicker } from "./TypePicker";
@@ -19,6 +19,8 @@ export interface NodeRowProps {
     offset: number;
     baseAddress: string;
     snapshot: Accessor<MemorySnapshot | null | undefined>;
+    /** Recent numeric values of this node, for the value sparkline (absent for non-numeric types). */
+    history?: number[];
     selected: boolean;
     editing: boolean;
     onSelect: (e: MouseEvent) => void;
@@ -29,6 +31,9 @@ export interface NodeRowProps {
     onContextMenu: (e: MouseEvent) => void;
     onDelete: () => void;
     onFollow: (target: string, name?: string) => void;
+    /** Whether this pointer row is expanded inline, and a toggle for it (pointer rows only). */
+    expanded: boolean;
+    onToggleExpand: () => void;
 }
 
 export function NodeRow(props: NodeRowProps) {
@@ -58,7 +63,7 @@ export function NodeRow(props: NodeRowProps) {
 
     const hex = createMemo(() => {
         const snap = props.snapshot();
-        return snap && inBounds(snap) ? bytePairs(snap.view, props.offset, byteSize()) : "";
+        return snap && inBounds(snap) ? bytePairsDiff(snap.view, snap.prev, props.offset, byteSize()) : [];
     });
 
     const ascii = createMemo(() => {
@@ -87,7 +92,9 @@ export function NodeRow(props: NodeRowProps) {
         >
             <span class="col-offset">{offsetLabel()}</span>
             <span class="col-address">{address()}</span>
-            <span class="col-hex">{hex()}</span>
+            <span class="col-hex">
+                <For each={hex()}>{(seg) => <span classList={{ changed: seg.changed }}>{seg.text}</span>}</For>
+            </span>
 
             <Show
                 when={props.editing}
@@ -119,6 +126,18 @@ export function NodeRow(props: NodeRowProps) {
             </span>
 
             <span class="col-value">
+                <Show when={followTarget()}>
+                    <button
+                        class="node-disclosure"
+                        title={props.expanded ? "collapse target struct" : "expand target struct inline"}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            props.onToggleExpand();
+                        }}
+                    >
+                        {props.expanded ? "▾" : "▸"}
+                    </button>
+                </Show>
                 <span class="value-text">
                     <Show when={value()} fallback={<span class="dim">-</span>}>
                         {(v) => (
@@ -126,6 +145,11 @@ export function NodeRow(props: NodeRowProps) {
                                 {(seg) => <span classList={{ changed: seg.changed }}>{seg.text}</span>}
                             </For>
                         )}
+                    </Show>
+                    <Show when={props.history && props.history.length > 2}>
+                        <svg class="value-spark" width="52" height="14" viewBox="0 0 52 14" preserveAspectRatio="none">
+                            <polyline points={sparklinePoints(props.history!, 52, 12)} fill="none" stroke="currentColor" stroke-width="1" />
+                        </svg>
                     </Show>
                     <Show when={pointer()?.previewHex}>
                         {(hex) => (

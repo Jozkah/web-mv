@@ -1,0 +1,793 @@
+- main [ref=e3]:
+  - generic [ref=e4]:
+    - navigation [ref=e5]:
+      - button "Signature scan" [ref=e6] [cursor=pointer]
+      - button "SigMaker" [ref=e10] [cursor=pointer]
+      - generic [ref=e12]:
+        - button "‹" [disabled] [ref=e13]
+        - button "›" [disabled] [ref=e14]
+        - button "Goto" [ref=e15] [cursor=pointer]
+    - generic [ref=e17]:
+      - generic [ref=e18]: pid 32344 · base 0x7ff64dba0000
+      - generic [ref=e19]: "server: open"
+      - generic [ref=e20]: "agent: up"
+      - generic "Extension agent (write / dump / exports / sections). Load web_mv_ext_agent.as to enable memory writing." [ref=e21]: "ext: up"
+  - generic [ref=e25]:
+    - generic [ref=e26]:
+      - tablist "Open tabs" [ref=e27]:
+        - tab "Class1 Close Class1" [ref=e28] [cursor=pointer]:
+          - generic [ref=e33]: Class1
+          - button "Close Class1" [ref=e34]
+        - tab "Modules Close Modules" [selected] [ref=e36] [cursor=pointer]:
+          - generic [ref=e42]: Modules
+          - button "Close Modules" [ref=e43]
+        - tab "Strings Close Strings" [ref=e45] [cursor=pointer]:
+          - generic [ref=e49]: Strings
+          - button "Close Strings" [ref=e50]
+      - button "Open new tab" [ref=e55] [cursor=pointer]
+    - generic [ref=e344]:
+      - generic [ref=e345]:
+        - generic [ref=e346]:
+          - generic [ref=e347]:
+            - heading "modules" [level=2] [ref=e348]
+            - generic [ref=e349]: "159"
+            - button "refresh" [ref=e350] [cursor=pointer]
+          - textbox "search module" [ref=e352]
+          - generic [ref=e354]:
+            - generic [ref=e355] [cursor=pointer]:
+              - generic "HuntGame.exe" [ref=e356]
+              - generic [ref=e357]: "0x7ff64dba0000"
+            - generic [ref=e358] [cursor=pointer]:
+              - generic "ntdll.dll" [ref=e359]
+              - generic [ref=e360]: "0x7fff145a0000"
+            - generic [ref=e361] [cursor=pointer]:
+              - generic "KERNEL32.dll" [ref=e362]
+              - generic [ref=e363]: "0x7fff13d70000"
+            - generic [ref=e364] [cursor=pointer]:
+              - generic "KERNELBASE.dll" [ref=e365]
+              - generic [ref=e366]: "0x7fff119b0000"
+            - generic [ref=e367] [cursor=pointer]:
+              - generic "USER32.dll" [ref=e368]
+              - generic [ref=e369]: "0x7fff137b0000"
+            - generic [ref=e370] [cursor=pointer]:
+              - generic "win32u.dll" [ref=e371]
+              - generic [ref=e372]: "0x7fff12370000"
+            - generic [ref=e373] [cursor=pointer]:
+              - generic "GDI32.dll" [ref=e374]
+              - generic [ref=e375]: "0x7fff13f00000"
+            - generic [ref=e376] [cursor=pointer]:
+              - generic "gdi32full.dll" [ref=e377]
+              - generic [ref=e378]: "0x7fff120c0000"
+            - generic [ref=e379] [cursor=pointer]:
+              - generic "msvcp_win.dll" [ref=e380]
+              - generic [ref=e381]: "0x7fff11d60000"
+            - generic [ref=e382] [cursor=pointer]:
+              - generic "ucrtbase.dll" [ref=e383]
+              - generic [ref=e384]: "0x7fff11e10000"
+            - generic [ref=e385] [cursor=pointer]:
+              - generic "ADVAPI32.dll" [ref=e386]
+              - generic [ref=e387]: "0x7fff13e40000"
+            - generic [ref=e388] [cursor=pointer]:
+              - generic "msvcrt.dll" [ref=e389]
+              - generic [ref=e390]: "0x7fff13060000"
+            - generic [ref=e391] [cursor=pointer]:
+              - generic "SECHOST.dll" [ref=e392]
+              - generic [ref=e393]: "0x7fff128b0000"
+            - generic [ref=e394] [cursor=pointer]:
+              - generic "RPCRT4.dll" [ref=e395]
+              - generic [ref=e396]: "0x1c3bc2c0000"
+            - generic [ref=e397] [cursor=pointer]:
+              - generic "WS2_32.dll" [ref=e398]
+              - generic [ref=e399]: "0x7fff13980000"
+            - generic [ref=e400] [cursor=pointer]:
+              - generic "SHELL32.dll" [ref=e401]
+              - generic [ref=e402]: "0x7fff12960000"
+            - generic [ref=e403] [cursor=pointer]:
+              - generic "SHLWAPI.dll" [ref=e404]
+              - generic [ref=e405]: "0x7fff14170000"
+            - generic [ref=e406] [cursor=pointer]:
+              - generic "ole32.dll" [ref=e407]
+              - generic [ref=e408]: "0x7fff13110000"
+            - generic [ref=e409] [cursor=pointer]:
+              - generic "combase.dll" [ref=e410]
+              - generic [ref=e411]: "0x7fff13430000"
+            - generic [ref=e412] [cursor=pointer]:
+              - generic "CRYPT32.dll" [ref=e413]
+              - generic [ref=e414]: "0x7fff121f0000"
+            - generic [ref=e415] [cursor=pointer]:
+              - generic "OLEAUT32.dll" [ref=e416]
+              - generic [ref=e417]: "0x7fff13b70000"
+            - generic [ref=e418] [cursor=pointer]:
+              - generic "SETUPAPI.dll" [ref=e419]
+              - generic [ref=e420]: "0x7fff12420000"
+            - generic [ref=e421] [cursor=pointer]:
+              - generic "AVIFIL32.dll" [ref=e422]
+              - generic [ref=e423]: "0x7ffef9f50000"
+            - generic [ref=e424] [cursor=pointer]:
+              - generic "VERSION.dll" [ref=e425]
+              - generic [ref=e426]: "0x7fff092f0000"
+            - generic [ref=e427] [cursor=pointer]:
+              - generic "WINMM.dll" [ref=e428]
+              - generic [ref=e429]: "0x7fff06f50000"
+            - generic [ref=e430] [cursor=pointer]:
+              - generic "XINPUT1_4.dll" [ref=e431]
+              - generic [ref=e432]: "0x7ffedcd60000"
+            - generic [ref=e433] [cursor=pointer]:
+              - generic "DSTORAGE.dll" [ref=e434]
+              - generic [ref=e435]: "0x7ffef9d60000"
+            - generic [ref=e436] [cursor=pointer]:
+              - generic "DINPUT8.dll" [ref=e437]
+              - generic [ref=e438]: "0x7ffeaae00000"
+            - generic [ref=e439] [cursor=pointer]:
+              - generic "HID.DLL" [ref=e440]
+              - generic [ref=e441]: "0x7fff10080000"
+            - generic [ref=e442] [cursor=pointer]:
+              - generic "MSWSOCK.dll" [ref=e443]
+              - generic [ref=e444]: "0x7fff10dc0000"
+            - generic [ref=e445] [cursor=pointer]:
+              - generic "WinPixEventRuntime.dll" [ref=e446]
+              - generic [ref=e447]: "0x7fff0ac50000"
+            - generic [ref=e448] [cursor=pointer]:
+              - generic "GfeSDK.dll" [ref=e449]
+              - generic [ref=e450]: "0x7ffe4ae80000"
+            - generic [ref=e451] [cursor=pointer]:
+              - generic "anybrainSDK.dll" [ref=e452]
+              - generic [ref=e453]: "0x180000000"
+            - generic [ref=e454] [cursor=pointer]:
+              - generic "WLDAP32.dll" [ref=e455]
+              - generic [ref=e456]: "0x7fff144e0000"
+            - generic [ref=e457] [cursor=pointer]:
+              - generic "discord_game_sdk.dll" [ref=e458]
+              - generic [ref=e459]: "0x7ffe4aad0000"
+            - generic [ref=e460] [cursor=pointer]:
+              - generic "steam_api64.dll" [ref=e461]
+              - generic [ref=e462]: "0x7ffee1a20000"
+            - generic [ref=e463] [cursor=pointer]:
+              - generic "dbghelp.dll" [ref=e464]
+              - generic [ref=e465]: "0x7ffe4a8a0000"
+            - generic [ref=e466] [cursor=pointer]:
+              - generic "IPHLPAPI.DLL" [ref=e467]
+              - generic [ref=e468]: "0x7fff102e0000"
+            - generic [ref=e469] [cursor=pointer]:
+              - generic "MSVCP140.dll" [ref=e470]
+              - generic [ref=e471]: "0x7ffee07a0000"
+            - generic [ref=e472] [cursor=pointer]:
+              - generic "COMCTL32.dll" [ref=e473]
+              - generic [ref=e474]: "0x7ffee8800000"
+            - generic [ref=e475] [cursor=pointer]:
+              - generic "VCRUNTIME140.dll" [ref=e476]
+              - generic [ref=e477]: "0x7ffef9f30000"
+            - generic [ref=e478] [cursor=pointer]:
+              - generic "VCRUNTIME140_1.dll" [ref=e479]
+              - generic [ref=e480]: "0x7fff09af0000"
+            - generic [ref=e481] [cursor=pointer]:
+              - generic "MSVFW32.dll" [ref=e482]
+              - generic [ref=e483]: "0x7ffef4ac0000"
+            - generic [ref=e484] [cursor=pointer]:
+              - generic "MSACM32.dll" [ref=e485]
+              - generic [ref=e486]: "0x7ffe506e0000"
+            - generic [ref=e487] [cursor=pointer]:
+              - generic "CFGMGR32.dll" [ref=e488]
+              - generic [ref=e489]: "0x7fff11670000"
+            - generic [ref=e490] [cursor=pointer]:
+              - generic "DEVOBJ.dll" [ref=e491]
+              - generic [ref=e492]: "0x7fff11640000"
+            - generic [ref=e493] [cursor=pointer]:
+              - generic "bcrypt.dll" [ref=e494]
+              - generic [ref=e495]: "0x7fff11310000"
+            - generic [ref=e496] [cursor=pointer]:
+              - generic "ktmw32.dll" [ref=e497]
+              - generic [ref=e498]: "0x7ffee21f0000"
+            - generic [ref=e499] [cursor=pointer]:
+              - generic "CRYPTBASE.dll" [ref=e500]
+              - generic [ref=e501]: "0x7fff10ff0000"
+            - generic [ref=e502] [cursor=pointer]:
+              - generic "IMM32.dll" [ref=e503]
+              - generic [ref=e504]: "0x7fff141e0000"
+            - generic [ref=e505] [cursor=pointer]:
+              - generic "GameOverlayRenderer64.dll" [ref=e506]
+              - generic [ref=e507]: "0x7ffe4b1b0000"
+            - generic [ref=e508] [cursor=pointer]:
+              - generic "PSAPI.DLL" [ref=e509]
+              - generic [ref=e510]: "0x7fff133f0000"
+            - generic [ref=e511] [cursor=pointer]:
+              - generic "Windows.Storage.dll" [ref=e512]
+              - generic [ref=e513]: "0x1c3bf170000"
+            - generic [ref=e514] [cursor=pointer]:
+              - generic "AppCore.dll" [ref=e515]
+              - generic [ref=e516]: "0x7fff108e0000"
+            - generic [ref=e517] [cursor=pointer]:
+              - generic "InputHost.dll" [ref=e518]
+              - generic [ref=e519]: "0x7ffedc020000"
+            - generic [ref=e520] [cursor=pointer]:
+              - generic "CoreMessaging.dll" [ref=e521]
+              - generic [ref=e522]: "0x7fff0c2e0000"
+            - generic [ref=e523] [cursor=pointer]:
+              - generic "bcryptPrimitives.dll" [ref=e524]
+              - generic [ref=e525]: "0x7fff11f60000"
+            - generic [ref=e526] [cursor=pointer]:
+              - generic "steamclient64.dll" [ref=e527]
+              - generic [ref=e528]: "0x7ffe2c470000"
+            - generic [ref=e529] [cursor=pointer]:
+              - generic "imagehlp.dll" [ref=e530]
+              - generic [ref=e531]: "0x7fff13400000"
+            - generic [ref=e532] [cursor=pointer]:
+              - generic "tier0_s64.dll" [ref=e533]
+              - generic [ref=e534]: "0x7ffe42ca0000"
+            - generic [ref=e535] [cursor=pointer]:
+              - generic "vstdlib_s64.dll" [ref=e536]
+              - generic [ref=e537]: "0x7ffe41650000"
+            - generic [ref=e538] [cursor=pointer]:
+              - generic "Secur32.dll" [ref=e539]
+              - generic [ref=e540]: "0x7ffefe1c0000"
+            - generic [ref=e541] [cursor=pointer]:
+              - generic "SspiCli.dll" [ref=e542]
+              - generic [ref=e543]: "0x7fff10b80000"
+            - generic [ref=e544] [cursor=pointer]:
+              - generic "SHCORE.dll" [ref=e545]
+              - generic [ref=e546]: "0x7fff142a0000"
+            - generic [ref=e547] [cursor=pointer]:
+              - generic "CLBCatQ.DLL" [ref=e548]
+              - generic [ref=e549]: "0x7fff132b0000"
+            - generic [ref=e550] [cursor=pointer]:
+              - generic "Amsi.dll" [ref=e551]
+              - generic [ref=e552]: "0x7ffefd9b0000"
+            - generic [ref=e553] [cursor=pointer]:
+              - generic "dbgcore.dll" [ref=e554]
+              - generic [ref=e555]: "0x7ffee19e0000"
+            - generic [ref=e556] [cursor=pointer]:
+              - generic "NTMARTA.dll" [ref=e557]
+              - generic [ref=e558]: "0x7fff10a00000"
+            - generic [ref=e559] [cursor=pointer]:
+              - generic "CRYPTSP.dll" [ref=e560]
+              - generic [ref=e561]: "0x7fff11180000"
+            - generic [ref=e562] [cursor=pointer]:
+              - generic "RSAENH.dll" [ref=e563]
+              - generic [ref=e564]: "0x7fff10840000"
+            - generic [ref=e565] [cursor=pointer]:
+              - generic "profapi.dll" [ref=e566]
+              - generic [ref=e567]: "0x7fff118d0000"
+            - generic [ref=e568] [cursor=pointer]:
+              - generic "CChromaEditorLibrary64.dll" [ref=e569]
+              - generic [ref=e570]: "0x7ffee0fb0000"
+            - generic [ref=e571] [cursor=pointer]:
+              - generic "mfc140u.dll" [ref=e572]
+              - generic [ref=e573]: "0x7ffe0d460000"
+            - generic [ref=e574] [cursor=pointer]:
+              - generic "UxTheme.dll" [ref=e575]
+              - generic [ref=e576]: "0x7fff0e850000"
+            - generic [ref=e577] [cursor=pointer]:
+              - generic "MSASN1.dll" [ref=e578]
+              - generic [ref=e579]: "0x7fff111e0000"
+            - generic [ref=e580] [cursor=pointer]:
+              - generic "RzChromaSDK64.dll" [ref=e581]
+              - generic [ref=e582]: "0x7ffec64b0000"
+            - generic [ref=e583] [cursor=pointer]:
+              - generic "CONCRT140.dll" [ref=e584]
+              - generic [ref=e585]: "0x7ffebed80000"
+            - generic [ref=e586] [cursor=pointer]:
+              - generic "CRYPTNET.dll" [ref=e587]
+              - generic [ref=e588]: "0x7fff092b0000"
+            - generic [ref=e589] [cursor=pointer]:
+              - generic "drvstore.dll" [ref=e590]
+              - generic [ref=e591]: "0x7fff08940000"
+            - generic [ref=e592] [cursor=pointer]:
+              - generic "Wldp.dll" [ref=e593]
+              - generic [ref=e594]: "0x7fff11090000"
+            - generic [ref=e595] [cursor=pointer]:
+              - generic "dxgi.dll" [ref=e596]
+              - generic [ref=e597]: "0x7fff0f410000"
+            - generic [ref=e598] [cursor=pointer]:
+              - generic "directxdatabasehelper.dll" [ref=e599]
+              - generic [ref=e600]: "0x7fff0f020000"
+            - generic [ref=e601] [cursor=pointer]:
+              - generic "WINTRUST.dll" [ref=e602]
+              - generic [ref=e603]: "0x7fff123a0000"
+            - generic [ref=e604] [cursor=pointer]:
+              - generic "dxcore.dll" [ref=e605]
+              - generic [ref=e606]: "0x7fff0ee80000"
+            - generic [ref=e607] [cursor=pointer]:
+              - generic "GPAPI.dll" [ref=e608]
+              - generic [ref=e609]: "0x7fff10e30000"
+            - generic [ref=e610] [cursor=pointer]:
+              - generic "MessageBus.dll" [ref=e611]
+              - generic [ref=e612]: "0x7ffea0750000"
+            - generic [ref=e613] [cursor=pointer]:
+              - generic "NSI.dll" [ref=e614]
+              - generic [ref=e615]: "0x7fff13f30000"
+            - generic [ref=e616] [cursor=pointer]:
+              - generic "dhcpcsvc.DLL" [ref=e617]
+              - generic [ref=e618]: "0x7fff0aab0000"
+            - generic [ref=e619] [cursor=pointer]:
+              - generic "nvspcap64.dll" [ref=e620]
+              - generic [ref=e621]: "0x7ffebf220000"
+            - generic [ref=e622] [cursor=pointer]:
+              - generic "CryRenderD3D12.dll" [ref=e623]
+              - generic [ref=e624]: "0x7ffe0cda0000"
+            - generic [ref=e625] [cursor=pointer]:
+              - generic "D3DCOMPILER_47.dll" [ref=e626]
+              - generic [ref=e627]: "0x7ffe0c950000"
+            - generic [ref=e628] [cursor=pointer]:
+              - generic "d3d12.dll" [ref=e629]
+              - generic [ref=e630]: "0x7ffefb190000"
+            - generic [ref=e631] [cursor=pointer]:
+              - generic "amd_fidelityfx_dx12.dll" [ref=e632]
+              - generic [ref=e633]: "0x7ffdfb120000"
+            - generic [ref=e634] [cursor=pointer]:
+              - generic "dxcompiler.dll" [ref=e635]
+              - generic [ref=e636]: "0x7ffdfa080000"
+            - generic [ref=e637] [cursor=pointer]:
+              - generic "OpenEXR-3_2.dll" [ref=e638]
+              - generic [ref=e639]: "0x7ffe24160000"
+            - generic [ref=e640] [cursor=pointer]:
+              - generic "Imath-3_2.dll" [ref=e641]
+              - generic [ref=e642]: "0x7ffea91c0000"
+            - generic [ref=e643] [cursor=pointer]:
+              - generic "IlmThread-3_2.dll" [ref=e644]
+              - generic [ref=e645]: "0x7fff099a0000"
+            - generic [ref=e646] [cursor=pointer]:
+              - generic "Iex-3_2.dll" [ref=e647]
+              - generic [ref=e648]: "0x7ffea86f0000"
+            - generic [ref=e649] [cursor=pointer]:
+              - generic "dxil.dll" [ref=e650]
+              - generic [ref=e651]: "0x7ffdfbda0000"
+            - generic [ref=e652] [cursor=pointer]:
+              - generic "nvapi64.dll" [ref=e653]
+              - generic [ref=e654]: "0x7fff06e10000"
+            - generic [ref=e655] [cursor=pointer]:
+              - generic "nvapi64_impl.dll" [ref=e656]
+              - generic [ref=e657]: "0x7fff06890000"
+            - generic [ref=e658] [cursor=pointer]:
+              - generic "mscms.dll" [ref=e659]
+              - generic [ref=e660]: "0x7ffece230000"
+            - generic [ref=e661] [cursor=pointer]:
+              - generic "ICM32.dll" [ref=e662]
+              - generic [ref=e663]: "0x7ffe255b0000"
+            - generic [ref=e664] [cursor=pointer]:
+              - generic "MSCTF.dll" [ref=e665]
+              - generic [ref=e666]: "0x7fff13a10000"
+            - generic [ref=e667] [cursor=pointer]:
+              - generic "TextInputFramework.dll" [ref=e668]
+              - generic [ref=e669]: "0x7ffedd130000"
+            - generic [ref=e670] [cursor=pointer]:
+              - generic "D3D12Core.dll" [ref=e671]
+              - generic [ref=e672]: "0x7ffdfba60000"
+            - generic [ref=e673] [cursor=pointer]:
+              - generic "nvldumdx.dll" [ref=e674]
+              - generic [ref=e675]: "0x7ffedbbd0000"
+            - generic [ref=e676] [cursor=pointer]:
+              - generic "nvgpucomp64.dll" [ref=e677]
+              - generic [ref=e678]: "0x7ffed4650000"
+            - generic [ref=e679] [cursor=pointer]:
+              - generic "NvMessageBus.dll" [ref=e680]
+              - generic [ref=e681]: "0x7fff06430000"
+            - generic [ref=e682] [cursor=pointer]:
+              - generic "NvMemMapStoragex.dll" [ref=e683]
+              - generic [ref=e684]: "0x7ffed3cf0000"
+            - generic [ref=e685] [cursor=pointer]:
+              - generic "POWRPROF.dll" [ref=e686]
+              - generic [ref=e687]: "0x7fff10650000"
+            - generic [ref=e688] [cursor=pointer]:
+              - generic "UMPDC.dll" [ref=e689]
+              - generic [ref=e690]: "0x7fff10610000"
+            - generic [ref=e691] [cursor=pointer]:
+              - generic "nvwgf2umx.dll" [ref=e692]
+              - generic [ref=e693]: "0x7ffece5a0000"
+            - generic [ref=e694] [cursor=pointer]:
+              - generic "nvppex.dll" [ref=e695]
+              - generic [ref=e696]: "0x7ffec0e40000"
+            - generic [ref=e697] [cursor=pointer]:
+              - generic "D3DSCache.dll" [ref=e698]
+              - generic [ref=e699]: "0x7ffe28d80000"
+            - generic [ref=e700] [cursor=pointer]:
+              - generic "USERENV.dll" [ref=e701]
+              - generic [ref=e702]: "0x7fff10e60000"
+            - generic [ref=e703] [cursor=pointer]:
+              - generic "twinapi.appcore.dll" [ref=e704]
+              - generic [ref=e705]: "0x7fff01d80000"
+            - generic [ref=e706] [cursor=pointer]:
+              - generic "_nvngx.dll" [ref=e707]
+              - generic [ref=e708]: "0x7ffdf9f00000"
+            - generic [ref=e709] [cursor=pointer]:
+              - generic "nvngx_dlss.dll" [ref=e710]
+              - generic [ref=e711]: "0x7ffdf6df0000"
+            - generic [ref=e712] [cursor=pointer]:
+              - generic "dcomp.dll" [ref=e713]
+              - generic [ref=e714]: "0x7fff0bba0000"
+            - generic [ref=e715] [cursor=pointer]:
+              - generic "Microsoft.Internal.WarpPal.dll" [ref=e716]
+              - generic [ref=e717]: "0x7fff0bab0000"
+            - generic [ref=e718] [cursor=pointer]:
+              - generic "dwmapi.dll" [ref=e719]
+              - generic [ref=e720]: "0x7fff0ee40000"
+            - generic [ref=e721] [cursor=pointer]:
+              - generic "TextShaping.dll" [ref=e722]
+              - generic [ref=e723]: "0x7ffecc990000"
+            - generic [ref=e724] [cursor=pointer]:
+              - generic "CryScaleformD3D12.dll" [ref=e725]
+              - generic [ref=e726]: "0x7ffdf6320000"
+            - generic [ref=e727] [cursor=pointer]:
+              - generic "NAPINSP.dll" [ref=e728]
+              - generic [ref=e729]: "0x7ffef6290000"
+            - generic [ref=e730] [cursor=pointer]:
+              - generic "DNSAPI.dll" [ref=e731]
+              - generic [ref=e732]: "0x7fff10370000"
+            - generic [ref=e733] [cursor=pointer]:
+              - generic "WINRNR.dll" [ref=e734]
+              - generic [ref=e735]: "0x7ffef6270000"
+            - generic [ref=e736] [cursor=pointer]:
+              - generic "NamespaceServiceProvider.dll" [ref=e737]
+              - generic [ref=e738]: "0x7ffef6240000"
+            - generic [ref=e739] [cursor=pointer]:
+              - generic "wshbth.dll" [ref=e740]
+              - generic [ref=e741]: "0x7fff0a1f0000"
+            - generic [ref=e742] [cursor=pointer]:
+              - generic "fwpuclnt.dll" [ref=e743]
+              - generic [ref=e744]: "0x7fff09e40000"
+            - generic [ref=e745] [cursor=pointer]:
+              - generic "GameHunt.dll" [ref=e746]
+              - generic [ref=e747]: "0x7ffdf1bb0000"
+            - generic [ref=e748] [cursor=pointer]:
+              - generic "vivoxsdk.dll" [ref=e749]
+              - generic [ref=e750]: "0x7ffdf0f80000"
+            - generic [ref=e751] [cursor=pointer]:
+              - generic "EOSSDK-Win64-Shipping.dll" [ref=e752]
+              - generic [ref=e753]: "0x7ffdefd60000"
+            - generic [ref=e754] [cursor=pointer]:
+              - generic "libcrypto-1_1.dll" [ref=e755]
+              - generic [ref=e756]: "0x7ffdefa20000"
+            - generic [ref=e757] [cursor=pointer]:
+              - generic "libssl-1_1.dll" [ref=e758]
+              - generic [ref=e759]: "0x7ffe4f840000"
+            - generic [ref=e760] [cursor=pointer]:
+              - generic "SensApi.dll" [ref=e761]
+              - generic [ref=e762]: "0x7fff0b280000"
+            - generic [ref=e763] [cursor=pointer]:
+              - generic "WINHTTP.dll" [ref=e764]
+              - generic [ref=e765]: "0x7fff0b150000"
+            - generic [ref=e766] [cursor=pointer]:
+              - generic "MMDevAPI.DLL" [ref=e767]
+              - generic [ref=e768]: "0x7fff0aae0000"
+            - generic [ref=e769] [cursor=pointer]:
+              - generic "AudioSes.DLL" [ref=e770]
+              - generic [ref=e771]: "0x7ffef3d40000"
+            - generic [ref=e772] [cursor=pointer]:
+              - generic "Windows.UI.dll" [ref=e773]
+              - generic [ref=e774]: "0x7ffedb7f0000"
+            - generic [ref=e775] [cursor=pointer]:
+              - generic "ResourcePolicyClient.dll" [ref=e776]
+              - generic [ref=e777]: "0x7fff0ef10000"
+            - generic [ref=e778] [cursor=pointer]:
+              - generic "dhcpcsvc6.DLL" [ref=e779]
+              - generic [ref=e780]: "0x7fff0bb70000"
+            - generic [ref=e781] [cursor=pointer]:
+              - generic "NvTelemetryAPI64.dll" [ref=e782]
+              - generic [ref=e783]: "0x7ffee2a90000"
+            - generic [ref=e784] [cursor=pointer]:
+              - generic "nvcuda.dll" [ref=e785]
+              - generic [ref=e786]: "0x7ffe9e850000"
+            - generic [ref=e787] [cursor=pointer]:
+              - generic "nvdxgdmal.dll" [ref=e788]
+              - generic [ref=e789]: "0x7ffe9e7a0000"
+            - generic [ref=e790] [cursor=pointer]:
+              - generic "nvobjectloader.dll" [ref=e791]
+              - generic [ref=e792]: "0x7ffe9d990000"
+            - generic [ref=e793] [cursor=pointer]:
+              - generic "NvTelemetryBridge64.dll" [ref=e794]
+              - generic [ref=e795]: "0x7ffee17c0000"
+            - generic [ref=e796] [cursor=pointer]:
+              - generic "SCHANNEL.dll" [ref=e797]
+              - generic [ref=e798]: "0x7fff10720000"
+            - generic [ref=e799] [cursor=pointer]:
+              - generic "ncrypt.dll" [ref=e800]
+              - generic [ref=e801]: "0x7fff112d0000"
+            - generic [ref=e802] [cursor=pointer]:
+              - generic "NTASN1.dll" [ref=e803]
+              - generic [ref=e804]: "0x7fff11280000"
+            - generic [ref=e805] [cursor=pointer]:
+              - generic "ncryptsslp.dll" [ref=e806]
+              - generic [ref=e807]: "0x7ffef7f50000"
+            - generic [ref=e808] [cursor=pointer]:
+              - generic "CoreUIComponents.dll" [ref=e809]
+              - generic [ref=e810]: "0x7ffede1d0000"
+            - generic [ref=e811] [cursor=pointer]:
+              - generic "WinTypes.dll" [ref=e812]
+              - generic [ref=e813]: "0x7fff0cb60000"
+            - generic [ref=e814] [cursor=pointer]:
+              - generic "wbemprox.dll" [ref=e815]
+              - generic [ref=e816]: "0x7fff04140000"
+            - generic [ref=e817] [cursor=pointer]:
+              - generic "wbemcomn.dll" [ref=e818]
+              - generic [ref=e819]: "0x7fff040c0000"
+            - generic [ref=e820] [cursor=pointer]:
+              - generic "WBEMSVC.dll" [ref=e821]
+              - generic [ref=e822]: "0x7fff03740000"
+            - generic [ref=e823] [cursor=pointer]:
+              - generic "FastProx.dll" [ref=e824]
+              - generic [ref=e825]: "0x7fff03b70000"
+            - generic [ref=e826] [cursor=pointer]:
+              - generic "dxilconv.dll" [ref=e827]
+              - generic [ref=e828]: "0x7ffded7e0000"
+            - generic [ref=e829] [cursor=pointer]:
+              - generic "PROPSYS.dll" [ref=e830]
+              - generic [ref=e831]: "0x7fff0d340000"
+        - generic [ref=e832]:
+          - heading "pinned" [level=2] [ref=e834]
+          - paragraph [ref=e835]: no pinned functions
+      - generic [ref=e836]:
+        - generic [ref=e837]:
+          - heading "functions" [level=2] [ref=e838]
+          - generic [ref=e839]: HuntGame.exe · 35088
+          - button "refresh" [ref=e841] [cursor=pointer]
+        - generic [ref=e842]:
+          - generic [ref=e843]: sort
+          - button "addr ▲" [ref=e844] [cursor=pointer]
+          - button "size" [ref=e845] [cursor=pointer]
+          - generic [ref=e846]:
+            - button "name/addr" [ref=e847] [cursor=pointer]
+            - button "sigsearch" [ref=e848] [cursor=pointer]
+        - textbox "search name or address" [ref=e850]
+        - generic [ref=e882]:
+          - generic [ref=e883] [cursor=pointer]:
+            - button "☆" [ref=e884]
+            - generic "double-click to rename" [ref=e885]: sub_1069
+            - generic [ref=e886]: "0x7ff64dba1069"
+            - generic [ref=e887]: 2133B
+          - generic [ref=e888] [cursor=pointer]:
+            - button "☆" [ref=e889]
+            - generic "double-click to rename" [ref=e890]: sub_7ba0
+            - generic [ref=e891]: "0x7ff64dba7ba0"
+            - generic [ref=e892]: 0B
+          - generic [ref=e893] [cursor=pointer]:
+            - button "☆" [ref=e894]
+            - generic "double-click to rename" [ref=e895]: sub_254f0
+            - generic [ref=e896]: "0x7ff64dbc54f0"
+            - generic [ref=e897]: 104B
+          - generic [ref=e898] [cursor=pointer]:
+            - button "☆" [ref=e899]
+            - generic "double-click to rename" [ref=e900]: sub_255c0
+            - generic [ref=e901]: "0x7ff64dbc55c0"
+            - generic [ref=e902]: 475B
+          - generic [ref=e903] [cursor=pointer]:
+            - button "☆" [ref=e904]
+            - generic "double-click to rename" [ref=e905]: sub_257c0
+            - generic [ref=e906]: "0x7ff64dbc57c0"
+            - generic [ref=e907]: 1417B
+          - generic [ref=e908] [cursor=pointer]:
+            - button "☆" [ref=e909]
+            - generic "double-click to rename" [ref=e910]: sub_25e20
+            - generic [ref=e911]: "0x7ff64dbc5e20"
+            - generic [ref=e912]: 475B
+          - generic [ref=e913] [cursor=pointer]:
+            - button "☆" [ref=e914]
+            - generic "double-click to rename" [ref=e915]: sub_2a680
+            - generic [ref=e916]: "0x7ff64dbca680"
+            - generic [ref=e917]: 697B
+          - generic [ref=e918] [cursor=pointer]:
+            - button "☆" [ref=e919]
+            - generic "double-click to rename" [ref=e920]: sub_2ab60
+            - generic [ref=e921]: "0x7ff64dbcab60"
+            - generic [ref=e922]: 1021B
+          - generic [ref=e923] [cursor=pointer]:
+            - button "☆" [ref=e924]
+            - generic "double-click to rename" [ref=e925]: sub_2af60
+            - generic [ref=e926]: "0x7ff64dbcaf60"
+            - generic [ref=e927]: 41B
+          - generic [ref=e928] [cursor=pointer]:
+            - button "☆" [ref=e929]
+            - generic "double-click to rename" [ref=e930]: sub_2c8b0
+            - generic [ref=e931]: "0x7ff64dbcc8b0"
+            - generic [ref=e932]: 505B
+          - generic [ref=e933] [cursor=pointer]:
+            - button "☆" [ref=e934]
+            - generic "double-click to rename" [ref=e935]: sub_2cb00
+            - generic [ref=e936]: "0x7ff64dbccb00"
+            - generic [ref=e937]: 617B
+          - generic [ref=e938] [cursor=pointer]:
+            - button "☆" [ref=e939]
+            - generic "double-click to rename" [ref=e940]: sub_2cfa0
+            - generic [ref=e941]: "0x7ff64dbccfa0"
+            - generic [ref=e942]: 217B
+          - generic [ref=e943] [cursor=pointer]:
+            - button "☆" [ref=e944]
+            - generic "double-click to rename" [ref=e945]: sub_2d0d0
+            - generic [ref=e946]: "0x7ff64dbcd0d0"
+            - generic [ref=e947]: 1305B
+          - generic [ref=e948] [cursor=pointer]:
+            - button "☆" [ref=e949]
+            - generic "double-click to rename" [ref=e950]: sub_2d6c0
+            - generic [ref=e951]: "0x7ff64dbcd6c0"
+            - generic [ref=e952]: 1081B
+          - generic [ref=e953] [cursor=pointer]:
+            - button "☆" [ref=e954]
+            - generic "double-click to rename" [ref=e955]: sub_2dbd0
+            - generic [ref=e956]: "0x7ff64dbcdbd0"
+            - generic [ref=e957]: 345B
+          - generic [ref=e958] [cursor=pointer]:
+            - button "☆" [ref=e959]
+            - generic "double-click to rename" [ref=e960]: sub_2dd80
+            - generic [ref=e961]: "0x7ff64dbcdd80"
+            - generic [ref=e962]: 424B
+          - generic [ref=e963] [cursor=pointer]:
+            - button "☆" [ref=e964]
+            - generic "double-click to rename" [ref=e965]: sub_2df30
+            - generic [ref=e966]: "0x7ff64dbcdf30"
+            - generic [ref=e967]: 6333B
+          - generic [ref=e968] [cursor=pointer]:
+            - button "☆" [ref=e969]
+            - generic "double-click to rename" [ref=e970]: sub_32fb0
+            - generic [ref=e971]: "0x7ff64dbd2fb0"
+            - generic [ref=e972]: 329B
+          - generic [ref=e973] [cursor=pointer]:
+            - button "☆" [ref=e974]
+            - generic "double-click to rename" [ref=e975]: sub_33100
+            - generic [ref=e976]: "0x7ff64dbd3100"
+            - generic [ref=e977]: 25B
+          - generic [ref=e978] [cursor=pointer]:
+            - button "☆" [ref=e979]
+            - generic "double-click to rename" [ref=e980]: sub_33120
+            - generic [ref=e981]: "0x7ff64dbd3120"
+            - generic [ref=e982]: 25B
+          - generic [ref=e983] [cursor=pointer]:
+            - button "☆" [ref=e984]
+            - generic "double-click to rename" [ref=e985]: sub_33140
+            - generic [ref=e986]: "0x7ff64dbd3140"
+            - generic [ref=e987]: 25B
+          - generic [ref=e988] [cursor=pointer]:
+            - button "☆" [ref=e989]
+            - generic "double-click to rename" [ref=e990]: sub_33160
+            - generic [ref=e991]: "0x7ff64dbd3160"
+            - generic [ref=e992]: 25B
+          - generic [ref=e993] [cursor=pointer]:
+            - button "☆" [ref=e994]
+            - generic "double-click to rename" [ref=e995]: sub_33180
+            - generic [ref=e996]: "0x7ff64dbd3180"
+            - generic [ref=e997]: 2326B
+          - generic [ref=e998] [cursor=pointer]:
+            - button "☆" [ref=e999]
+            - generic "double-click to rename" [ref=e1000]: sub_36930
+            - generic [ref=e1001]: "0x7ff64dbd6930"
+            - generic [ref=e1002]: 5791B
+          - generic [ref=e1003] [cursor=pointer]:
+            - button "☆" [ref=e1004]
+            - generic "double-click to rename" [ref=e1005]: sub_37ff0
+            - generic [ref=e1006]: "0x7ff64dbd7ff0"
+            - generic [ref=e1007]: 95B
+          - generic [ref=e1008] [cursor=pointer]:
+            - button "☆" [ref=e1009]
+            - generic "double-click to rename" [ref=e1010]: sub_38150
+            - generic [ref=e1011]: "0x7ff64dbd8150"
+            - generic [ref=e1012]: 2107B
+          - generic [ref=e1013] [cursor=pointer]:
+            - button "☆" [ref=e1014]
+            - generic "double-click to rename" [ref=e1015]: sub_39290
+            - generic [ref=e1016]: "0x7ff64dbd9290"
+            - generic [ref=e1017]: 201B
+          - generic [ref=e1018] [cursor=pointer]:
+            - button "☆" [ref=e1019]
+            - generic "double-click to rename" [ref=e1020]: sub_39bf0
+            - generic [ref=e1021]: "0x7ff64dbd9bf0"
+            - generic [ref=e1022]: 763B
+          - generic [ref=e1023] [cursor=pointer]:
+            - button "☆" [ref=e1024]
+            - generic "double-click to rename" [ref=e1025]: sub_3c082
+            - generic [ref=e1026]: "0x7ff64dbdc082"
+            - generic [ref=e1027]: 105B
+          - generic [ref=e1028] [cursor=pointer]:
+            - button "☆" [ref=e1029]
+            - generic "double-click to rename" [ref=e1030]: sub_3c5d0
+            - generic [ref=e1031]: "0x7ff64dbdc5d0"
+            - generic [ref=e1032]: 370B
+          - generic [ref=e1033] [cursor=pointer]:
+            - button "☆" [ref=e1034]
+            - generic "double-click to rename" [ref=e1035]: sub_3c750
+            - generic [ref=e1036]: "0x7ff64dbdc750"
+            - generic [ref=e1037]: 235B
+          - generic [ref=e1038] [cursor=pointer]:
+            - button "☆" [ref=e1039]
+            - generic "double-click to rename" [ref=e1040]: sub_3cd70
+            - generic [ref=e1041]: "0x7ff64dbdcd70"
+            - generic [ref=e1042]: 1291B
+          - generic [ref=e1043] [cursor=pointer]:
+            - button "☆" [ref=e1044]
+            - generic "double-click to rename" [ref=e1045]: sub_3e330
+            - generic [ref=e1046]: "0x7ff64dbde330"
+            - generic [ref=e1047]: 937B
+          - generic [ref=e1048] [cursor=pointer]:
+            - button "☆" [ref=e1049]
+            - generic "double-click to rename" [ref=e1050]: sub_3e8f0
+            - generic [ref=e1051]: "0x7ff64dbde8f0"
+            - generic [ref=e1052]: 201B
+          - generic [ref=e1053] [cursor=pointer]:
+            - button "☆" [ref=e1054]
+            - generic "double-click to rename" [ref=e1055]: sub_3f000
+            - generic [ref=e1056]: "0x7ff64dbdf000"
+            - generic [ref=e1057]: 169B
+          - generic [ref=e1058] [cursor=pointer]:
+            - button "☆" [ref=e1059]
+            - generic "double-click to rename" [ref=e1060]: sub_3f661
+            - generic [ref=e1061]: "0x7ff64dbdf661"
+            - generic [ref=e1062]: 122B
+          - generic [ref=e1063] [cursor=pointer]:
+            - button "☆" [ref=e1064]
+            - generic "double-click to rename" [ref=e1065]: sub_3fa60
+            - generic [ref=e1066]: "0x7ff64dbdfa60"
+            - generic [ref=e1067]: 955B
+          - generic [ref=e1068] [cursor=pointer]:
+            - button "☆" [ref=e1069]
+            - generic "double-click to rename" [ref=e1070]: sub_404e0
+            - generic [ref=e1071]: "0x7ff64dbe04e0"
+            - generic [ref=e1072]: 315B
+          - generic [ref=e1073] [cursor=pointer]:
+            - button "☆" [ref=e1074]
+            - generic "double-click to rename" [ref=e1075]: sub_40620
+            - generic [ref=e1076]: "0x7ff64dbe0620"
+            - generic [ref=e1077]: 59B
+          - generic [ref=e1078] [cursor=pointer]:
+            - button "☆" [ref=e1079]
+            - generic "double-click to rename" [ref=e1080]: sub_40660
+            - generic [ref=e1081]: "0x7ff64dbe0660"
+            - generic [ref=e1082]: 27B
+          - generic [ref=e1083] [cursor=pointer]:
+            - button "☆" [ref=e1084]
+            - generic "double-click to rename" [ref=e1085]: sub_40680
+            - generic [ref=e1086]: "0x7ff64dbe0680"
+            - generic [ref=e1087]: 27B
+          - generic [ref=e1088] [cursor=pointer]:
+            - button "☆" [ref=e1089]
+            - generic "double-click to rename" [ref=e1090]: sub_406a0
+            - generic [ref=e1091]: "0x7ff64dbe06a0"
+            - generic [ref=e1092]: 27B
+          - generic [ref=e1093] [cursor=pointer]:
+            - button "☆" [ref=e1094]
+            - generic "double-click to rename" [ref=e1095]: sub_406c0
+            - generic [ref=e1096]: "0x7ff64dbe06c0"
+            - generic [ref=e1097]: 59B
+          - generic [ref=e1098] [cursor=pointer]:
+            - button "☆" [ref=e1099]
+            - generic "double-click to rename" [ref=e1100]: sub_40700
+            - generic [ref=e1101]: "0x7ff64dbe0700"
+            - generic [ref=e1102]: 1321B
+          - generic [ref=e1103] [cursor=pointer]:
+            - button "☆" [ref=e1104]
+            - generic "double-click to rename" [ref=e1105]: sub_40ea0
+            - generic [ref=e1106]: "0x7ff64dbe0ea0"
+            - generic [ref=e1107]: 4628B
+          - generic [ref=e1108] [cursor=pointer]:
+            - button "☆" [ref=e1109]
+            - generic "double-click to rename" [ref=e1110]: sub_428c0
+            - generic [ref=e1111]: "0x7ff64dbe28c0"
+            - generic [ref=e1112]: 25B
+          - generic [ref=e1113] [cursor=pointer]:
+            - button "☆" [ref=e1114]
+            - generic "double-click to rename" [ref=e1115]: sub_428e0
+            - generic [ref=e1116]: "0x7ff64dbe28e0"
+            - generic [ref=e1117]: 25B
+          - generic [ref=e1118] [cursor=pointer]:
+            - button "☆" [ref=e1119]
+            - generic "double-click to rename" [ref=e1120]: sub_42900
+            - generic [ref=e1121]: "0x7ff64dbe2900"
+            - generic [ref=e1122]: 893B
+          - generic [ref=e1123] [cursor=pointer]:
+            - button "☆" [ref=e1124]
+            - generic "double-click to rename" [ref=e1125]: sub_42f52
+            - generic [ref=e1126]: "0x7ff64dbe2f52"
+            - generic [ref=e1127]: 43B
+          - generic [ref=e1128] [cursor=pointer]:
+            - button "☆" [ref=e1129]
+            - generic "double-click to rename" [ref=e1130]: sub_432c0
+            - generic [ref=e1131]: "0x7ff64dbe32c0"
+            - generic [ref=e1132]: 3979B
+      - generic [ref=e854]:
+        - generic [ref=e855]:
+          - heading "disassembly" [level=2] [ref=e856]
+          - generic [ref=e857]: "-"
+        - generic [ref=e858]:
+          - textbox [ref=e862]
+          - paragraph [ref=e864]: select a function to disassemble
+      - generic [ref=e865]:
+        - generic [ref=e866]:
+          - heading "xrefs" [level=2] [ref=e867]
+          - generic [ref=e868]: "-"
+          - button "build index" [ref=e1133] [cursor=pointer]
+        - generic [ref=e869]: select a function

@@ -94,7 +94,7 @@ export function HistoryView() {
                 app.setActiveView("strings");
                 break;
             case "memory":
-                app.setActiveView("memory");
+                app.setActiveView("memory", item.classId);
                 if (memoryState && item.classId) {
                     memoryState.selectClass(item.classId);
                 }

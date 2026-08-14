@@ -8,14 +8,67 @@ import type { ServerWebSocket, WebSocketHandler } from "bun";
 // are broadcasted to all connected UI browser tabs, where each tab matches its own pending request
 // by ID and ignores non-matching frames.
 
-export type Role = "ui" | "agent";
+export type Role = "ui" | "agent" | "agent-ext";
 
 export interface SocketData {
     role: Role;
 }
 
+// Verbs handled by the extension agent (write-family: memory mutation, dump, PE table walks,
+// value/raw scans, resource tree, IAT rebuild). Everything else goes to the core agent (Echo's
+// built-in memory server via process::open_socket). The two run as separate agent sockets because
+// a single Angel host cannot expose Echo's built-in server and a custom ws:: handler on the same
+// relay endpoint. Routing by verb here keeps the proven read/scan/disassemble path untouched while
+// adding mutation support. Keep this in sync with web_mv_ext_agent.as's dispatch — a mismatch means
+// a verb silently times out on the wrong socket.
+const EXT_VERBS = new Set<string>([
+    "write",
+    "dump",
+    "exports",
+    "imports",
+    "iat_rebuild",
+    "sections",
+    "regions",
+    "scan_new",
+    "scan_filter",
+    "scan_clear",
+    "scan_grouped",
+    "raw_scan",
+    "pe_header",
+    "pe_dirs",
+    "resource_tree",
+]);
+
+function frameType(message: string | Buffer): string | undefined {
+    let obj: unknown;
+    try {
+        obj = JSON.parse(typeof message === "string" ? message : message.toString("utf8"));
+    } catch {
+        return undefined;
+    }
+    const type = (obj as { type?: unknown })?.type;
+    return typeof type === "string" ? type : undefined;
+}
+
 const uiSockets = new Set<ServerWebSocket<SocketData>>();
 let agent: ServerWebSocket<SocketData> | null = null;
+let agentExt: ServerWebSocket<SocketData> | null = null;
+
+/** Pick the agent socket that should service a frame of the given verb. */
+function agentFor(type: string | undefined): ServerWebSocket<SocketData> | null {
+    if (type !== undefined && EXT_VERBS.has(type)) return agentExt;
+    return agent;
+}
+
+/** Whether the core agent (Echo built-in server) is connected. */
+export function agentConnected(): boolean {
+    return agent !== null;
+}
+
+/** Whether the extension agent (write/dump/exports/sections) is connected. */
+export function extConnected(): boolean {
+    return agentExt !== null;
+}
 
 // --- RPC multiplexer state -------------------------------------------------
 
@@ -31,6 +84,7 @@ interface RpcPending {
     resolve: (frame: string) => void;
     reject: (err: Error) => void;
     timer: ReturnType<typeof setTimeout>;
+    sock: ServerWebSocket<SocketData>; // the agent lane this call was sent to
 }
 
 const rpcPending = new Map<number, RpcPending>();
@@ -41,7 +95,7 @@ let rpcNextId = 1;
  * with the agent's raw JSON reply.
  */
 export function callAgent(frame: Record<string, unknown>, timeoutMs: number): Promise<string> {
-    const sock = agent;
+    const sock = agentFor(typeof frame.type === "string" ? frame.type : undefined);
     if (!sock) return Promise.reject(new Error("no agent connected"));
 
     const id = RPC_ID_BASE + rpcNextId++;
@@ -54,16 +108,18 @@ export function callAgent(frame: Record<string, unknown>, timeoutMs: number): Pr
             rpcPending.delete(id);
             reject(new Error("agent request timed out"));
         }, timeoutMs);
-        rpcPending.set(id, { resolve, reject, timer });
+        rpcPending.set(id, { resolve, reject, timer, sock });
     });
 }
 
-function rejectAllRpc(err: Error): void {
-    for (const p of rpcPending.values()) {
+/** Reject only the pending /rpc calls that were routed to `sock` (the lane that just dropped). */
+function rejectRpcFor(sock: ServerWebSocket<SocketData>, err: Error): void {
+    for (const [id, p] of rpcPending) {
+        if (p.sock !== sock) continue;
         clearTimeout(p.timer);
+        rpcPending.delete(id);
         p.reject(err);
     }
-    rpcPending.clear();
 }
 
 // --- Active-client tracking (drives the UI's "agents" badge) ----------------
@@ -136,6 +192,10 @@ export const handlers: WebSocketHandler<SocketData> = {
         if (ws.data.role === "ui") {
             uiSockets.add(ws);
             console.log(`[+] ui connected (total: ${uiSockets.size})`);
+        } else if (ws.data.role === "agent-ext") {
+            agentExt?.close(1000, "replaced by newer ext agent");
+            agentExt = ws;
+            console.log(`[+] ext agent connected (write/dump/exports/scan/pe/resource)`);
         } else {
             agent?.close(1000, "replaced by newer agent");
             agent = ws;
@@ -144,10 +204,12 @@ export const handlers: WebSocketHandler<SocketData> = {
     },
 
     message(ws, message) {
-        if (ws.data.role === "agent") {
+        // Both agent sockets funnel replies through the same RPC-match/broadcast path.
+        if (ws.data.role === "agent" || ws.data.role === "agent-ext") {
             routeAgentFrame(message);
         } else {
-            agent?.send(message);
+            // UI request: route to the agent that owns this verb (ext for write-family).
+            agentFor(frameType(message))?.send(message);
         }
     },
 
@@ -156,9 +218,14 @@ export const handlers: WebSocketHandler<SocketData> = {
             uiSockets.delete(ws);
             console.log(`[-] ui disconnected (code ${code}, remaining: ${uiSockets.size})`);
         }
+        if (ws.data.role === "agent-ext" && agentExt === ws) {
+            agentExt = null;
+            rejectRpcFor(ws, new Error("ext agent disconnected"));
+            console.log(`[-] ext agent disconnected (code ${code}${reason ? `, ${reason}` : ""})`);
+        }
         if (ws.data.role === "agent" && agent === ws) {
             agent = null;
-            rejectAllRpc(new Error("agent disconnected"));
+            rejectRpcFor(ws, new Error("agent disconnected"));
             console.log(`[-] agent disconnected (code ${code}${reason ? `, ${reason}` : ""})`);
         }
     },

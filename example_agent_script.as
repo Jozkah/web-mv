@@ -4,11 +4,11 @@
 // Workflow:
 //   1. Start the relay: run release\bun-server.exe (or run.bat)
 //   2. Load this script in Echo/Angel.
-//   3. Open http://127.0.0.1:8080/ in your browser.
+//   3. Open http://127.0.0.1:9000/ in your browser.
 
 const string PROCESS_NAME = "HuntGame.exe";              // Target process name
 const string GAME_MODULE  = "GameHunt.dll";              // Target module to inspect
-const string RELAY_URL    = "ws://localhost:8080/agent"; // Default web-mv relay port (8080)
+const string RELAY_URL    = "ws://localhost:9000/agent"; // Default web-mv relay port (9000)
 
 bool g_attached = false;
 
@@ -45,7 +45,7 @@ void connect()
     // open_socket returns false if the relay is unreachable OR a socket is
     // already open (only one connection allowed at a time).
     if (process::open_socket(RELAY_URL))
-        notify("relay connected — open http://127.0.0.1:8080/ and browse " + GAME_MODULE,
+        notify("relay connected — open http://127.0.0.1:9000/ and browse " + GAME_MODULE,
                80, 255, 120);
     else
         notify("open_socket FAILED — start release\\bun-server.exe, or a socket is already open",
@@ -76,3 +76,4 @@ void on_unload()
 {
     process::detach();
 }
+

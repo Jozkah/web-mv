@@ -290,3 +290,38 @@
         flex: 0 0 50px;
     }
 }
+
+/* Xref pivot action on a string row: jumps to the function(s) referencing the string. */
+.strings-col-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+.strings-value-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+.strings-xref-btn {
+    flex: 0 0 auto;
+    font: inherit;
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 0 6px;
+    border: 1px solid var(--accent-border);
+    border-radius: 3px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.1s;
+}
+.strings-row:hover .strings-xref-btn {
+    opacity: 1;
+}
+.strings-xref-btn:disabled {
+    cursor: default;
+    opacity: 0.4;
+}

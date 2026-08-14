@@ -1,279 +1,441 @@
-/* Multi-tab and Multi-panel workspace layout styles */
+/* Workspace: the tab strip and the view host beneath it. The tab strip is the whole navigation
+   model - open items are tabs, the active tab's view fills the area below. A second group only
+   appears when a tab is explicitly sent "to the side". */
 
-.workspace-container {
+.workspace {
+    --tabbar-h: 40px;
+    --tab-h: 34px;
+    --tab-radius: 7px;
+
     display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
-    min-width: 0;
-    width: 100%;
-    height: 100%;
-}
-
-.workspace-main {
-    display: flex;
-    flex: 1 1 auto;
-    min-height: 0;
-    min-width: 0;
-    width: 100%;
-    height: 100%;
-}
-
-.workspace-main.split-h {
     flex-direction: row;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
 }
 
-.workspace-main.split-v {
-    flex-direction: column;
-}
-
-.workspace-panel {
+.ws-group {
     display: flex;
     flex-direction: column;
     flex: 1 1 0;
-    min-height: 0;
     min-width: 0;
+    min-height: 0;
+    position: relative;
     overflow: hidden;
     background: var(--bg);
-    position: relative;
-    box-sizing: border-box;
 }
 
-/* Split dividers */
-.workspace-main.split-h .workspace-panel:first-child {
-    border-right: 1px solid var(--border);
+.workspace.split .ws-group + .ws-group {
+    border-left: 1px solid var(--border);
 }
 
-.workspace-main.split-v .workspace-panel:first-child {
-    border-bottom: 1px solid var(--border);
-}
-
-/* Panel focus indicator */
-.workspace-panel.focused::after {
+/* Focus accent only matters when there is more than one group. */
+.workspace.split .ws-group.focused::before {
     content: "";
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    inset: 0 0 auto 0;
     height: 2px;
     background: var(--accent);
+    z-index: 6;
     pointer-events: none;
-    z-index: 10;
+}
+.workspace.split .ws-group:not(.focused) .ws-tabbar {
+    opacity: 0.9;
 }
 
-.panel-viewport {
+.ws-viewport {
     display: flex;
-    flex-direction: column;
     flex: 1 1 auto;
-    min-height: 0;
     min-width: 0;
+    min-height: 0;
     width: 100%;
-    height: 100%;
     overflow: hidden;
 }
 
-/* Tab Bar ---------------------------------------------------------------- */
+/* Tab strip ---------------------------------------------------------------- */
 
-.workspace-tabbar {
+.ws-tabbar {
+    position: relative;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 36px;
-    padding: 0 8px;
+    align-items: flex-end;
+    gap: 4px;
+    height: var(--tabbar-h);
+    padding: 0 6px;
     background: var(--code-bg);
     border-bottom: 1px solid var(--border);
     flex: 0 0 auto;
     user-select: none;
-    gap: 8px;
 }
 
-.workspace-tabs-scroll {
+.ws-tabs-scroll {
+    position: relative;
     display: flex;
-    align-items: center;
-    gap: 4px;
-    overflow-x: auto;
+    align-items: flex-end;
+    gap: 2px;
     flex: 1 1 auto;
     min-width: 0;
     height: 100%;
-    padding-top: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
 }
-.workspace-tabs-scroll::-webkit-scrollbar {
+.ws-tabs-scroll::-webkit-scrollbar {
     display: none;
 }
 
+/* Edge fades signal that tabs continue past the visible strip. Applied as a mask so no extra
+   element is needed; the two-class rule wins over either single-class rule. */
+.ws-tabbar.fade-left .ws-tabs-scroll {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 28px);
+    mask-image: linear-gradient(90deg, transparent 0, #000 28px);
+}
+.ws-tabbar.fade-right .ws-tabs-scroll {
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+.ws-tabbar.fade-left.fade-right .ws-tabs-scroll {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 28px, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, transparent 0, #000 28px, #000 calc(100% - 28px), transparent);
+}
+
 .ws-tab {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    height: 32px;
-    padding: 0 10px;
+    gap: 7px;
+    flex: 0 1 auto;
+    min-width: 92px;
+    max-width: 200px;
+    height: var(--tab-h);
+    padding: 0 8px 0 11px;
     font-family: var(--heading);
     font-size: 13px;
     color: var(--text);
     background: transparent;
     border: 1px solid transparent;
     border-bottom: none;
-    border-radius: 6px 6px 0 0;
+    border-radius: var(--tab-radius) var(--tab-radius) 0 0;
     cursor: pointer;
     white-space: nowrap;
-    transition: background 0.12s ease, color 0.12s ease;
-    max-width: 200px;
+    transition: background 0.14s ease, color 0.14s ease;
 }
-
 .ws-tab:hover {
     background: var(--social-bg);
     color: var(--text-h);
 }
-
 .ws-tab.active {
+    color: var(--text-h);
     background: var(--bg);
-    color: var(--accent);
     border-color: var(--border);
     border-bottom: 1px solid var(--bg);
-    font-weight: 500;
     margin-bottom: -1px;
 }
-
-.ws-tab .tab-icon {
-    font-size: 13px;
-    line-height: 1;
-    opacity: 0.85;
+/* Active tab accent line, merging the tab into the content below it. */
+.ws-tab.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 2px;
+    border-radius: 2px 2px 0 0;
+    background: var(--accent);
+}
+.ws-tab.dragging {
+    opacity: 0.5;
 }
 
-.ws-tab .tab-title {
+.ws-tab-icon {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    opacity: 0.85;
+}
+.ws-tab.active .ws-tab-icon {
+    opacity: 1;
+}
+
+.ws-tab-title {
+    flex: 1 1 auto;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.ws-tab .tab-close {
+.ws-tab-close {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    font-size: 12px;
-    line-height: 1;
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    margin-right: -3px;
+    padding: 0;
     color: var(--text);
-    margin-left: 2px;
-    opacity: 0.6;
-    transition: all 0.12s ease;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
 }
-
-.ws-tab .tab-close:hover {
+.ws-tab:hover .ws-tab-close,
+.ws-tab.active .ws-tab-close {
+    opacity: 0.55;
+}
+.ws-tab-close:hover {
     opacity: 1;
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
+    background: var(--social-bg);
+    color: var(--text-h);
 }
 
-/* Add Tab Button & Dropdown Menu ------------------------------------------ */
+/* Insertion indicator during drag-to-reorder. */
+.ws-drop-indicator {
+    position: absolute;
+    top: 4px;
+    bottom: 3px;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--accent);
+    z-index: 5;
+    pointer-events: none;
+    transform: translateX(-1px);
+}
 
-.ws-tab-add-wrap {
+/* Trailing actions (overflow + new tab) --------------------------------- */
+
+.ws-tabbar-actions {
+    display: flex;
+    align-items: center;
+    align-self: center;
+    gap: 2px;
+    flex: 0 0 auto;
+    padding-left: 2px;
+    z-index: 3;
+}
+
+.ws-action-wrap {
     position: relative;
     display: flex;
     align-items: center;
 }
 
-.ws-tab-add-btn {
+.ws-icon-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 28px;
     height: 28px;
-    border-radius: 5px;
-    font-size: 16px;
-    font-weight: 500;
     color: var(--text);
     background: transparent;
     border: 1px solid transparent;
+    border-radius: 6px;
     cursor: pointer;
-    transition: all 0.12s ease;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
-
-.ws-tab-add-btn:hover {
+.ws-icon-btn:hover {
     background: var(--social-bg);
-    color: var(--accent);
+    color: var(--text-h);
     border-color: var(--border);
 }
-
-.ws-tab-menu-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 99;
+.ws-new-tab:hover {
+    color: var(--accent);
 }
 
-.ws-tab-menu {
+/* Menus (new tab / overflow / context) ---------------------------------- */
+
+.ws-menu {
     position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 4px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    box-shadow: var(--shadow);
-    z-index: 100;
-    min-width: 160px;
-    padding: 4px;
+    z-index: 200;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
+    min-width: 180px;
+    padding: 5px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    box-shadow: var(--shadow);
+    font-family: var(--sans);
+    transform-origin: top right;
+    animation: ws-menu-in 0.12s ease-out;
+}
+@keyframes ws-menu-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
-.ws-tab-menu-item {
+.ws-menu--new,
+.ws-menu--overflow {
+    top: calc(100% + 6px);
+    right: 0;
+}
+.ws-menu--new {
+    min-width: 264px;
+}
+.ws-menu--overflow {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.ws-menu--context {
+    position: fixed;
+    min-width: 192px;
+    transform-origin: top left;
+}
+
+.ws-menu-head {
+    padding: 4px 10px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text);
+    opacity: 0.75;
+}
+
+.ws-menu-sep {
+    height: 1px;
+    margin: 4px 2px;
+    background: var(--border);
+}
+
+.ws-menu-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
+    gap: 9px;
+    width: 100%;
+    padding: 7px 10px;
     font-family: var(--sans);
     font-size: 13px;
     color: var(--text-h);
     background: transparent;
     border: none;
-    border-radius: 4px;
-    cursor: pointer;
+    border-radius: 5px;
     text-align: left;
-    transition: background 0.12s ease;
+    cursor: pointer;
+    transition: background 0.1s ease, color 0.1s ease;
 }
-
-.ws-tab-menu-item:hover {
+.ws-menu-item:hover,
+.ws-menu-item:focus-visible {
     background: var(--accent-bg);
     color: var(--accent);
+    outline: none;
 }
 
-/* Layout Split Toggle Buttons in TopBar ------------------------------------ */
-
-.layout-toggles {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    background: var(--code-bg);
-    padding: 2px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-}
-
-.layout-btn {
-    font: inherit;
-    font-family: var(--mono);
-    font-size: 12px;
-    cursor: pointer;
-    color: var(--text);
-    background: transparent;
-    border: none;
-    border-radius: 4px;
-    padding: 2px 8px;
+.ws-menu-item-icon {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    transition: all 0.12s ease;
+    flex: 0 0 auto;
+    color: var(--text);
+}
+.ws-menu-item:hover .ws-menu-item-icon,
+.ws-menu-item--tab.active .ws-menu-item-icon {
+    color: var(--accent);
 }
 
-.layout-btn:hover {
+.ws-menu-item--rich {
+    align-items: flex-start;
+    padding: 8px 10px;
+}
+.ws-menu-item--rich .ws-menu-item-icon {
+    margin-top: 1px;
+}
+.ws-menu-item-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+.ws-menu-item-label {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.25;
+}
+.ws-menu-item-desc {
+    font-size: 11.5px;
+    line-height: 1.3;
+    color: var(--text);
+    opacity: 0.85;
+}
+.ws-menu-item:hover .ws-menu-item-desc {
+    color: var(--accent);
+    opacity: 0.8;
+}
+.ws-menu-item--tab.active {
+    color: var(--accent);
+}
+
+/* Empty state ----------------------------------------------------------- */
+
+.ws-empty {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 0;
+    padding: 24px;
+}
+.ws-empty-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+}
+.ws-empty-title {
+    margin: 0;
+    font-family: var(--heading);
+    font-size: 18px;
     color: var(--text-h);
 }
-
-.layout-btn.active {
+.ws-empty-sub {
+    margin: 0 0 10px;
+    font-size: 13px;
+    color: var(--text);
+}
+.ws-empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+.ws-empty-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 14px;
+    font-family: var(--heading);
+    font-size: 13px;
+    color: var(--text-h);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.ws-empty-btn:hover {
     color: var(--accent);
-    background: var(--bg);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    background: var(--accent-bg);
+    border-color: var(--accent-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ws-menu {
+        animation: none;
+    }
+    .ws-tab,
+    .ws-tab-close,
+    .ws-icon-btn,
+    .ws-empty-btn {
+        transition: none;
+    }
 }

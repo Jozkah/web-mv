@@ -177,7 +177,11 @@ export function FunctionList() {
         ];
     });
 
-    // Widest rendered text per column
+    // Widest rendered text per column. The row font is monospace, so character count is
+    // proportional to pixel width - which lets us find the widest cell by string length (cheap)
+    // and run the expensive canvas measureText() only three times, once per column, instead of
+    // 3x per function. On a 100k+ function module that is the difference between an instant open
+    // and a multi-second hang (359k canvas measurements).
     const NAME_MAX = 360;
     const columns = createMemo(() => {
         const m = moduleName();
@@ -185,18 +189,20 @@ export function FunctionList() {
         const base = m ? modules.baseOf(m) : undefined;
         if (!m || e?.status !== "ready" || !base) return undefined;
 
-        let name = 0;
-        let addr = 0;
-        let size = 0;
+        let nameStr = "";
+        let addrStr = "";
+        let sizeStr = "";
         for (const f of e.data) {
-            name = Math.max(name, textWidth(annotations.nameOf(m, rvaOf(base, f.address))));
-            addr = Math.max(addr, textWidth(f.address));
-            size = Math.max(size, textWidth(`${f.size}B`));
+            const nm = annotations.nameOf(m, rvaOf(base, f.address));
+            if (nm.length > nameStr.length) nameStr = nm;
+            if (f.address.length > addrStr.length) addrStr = f.address;
+            const sz = `${f.size}B`;
+            if (sz.length > sizeStr.length) sizeStr = sz;
         }
         return {
-            name: Math.min(Math.ceil(name), NAME_MAX),
-            addr: Math.ceil(addr),
-            size: Math.ceil(size),
+            name: Math.min(Math.ceil(textWidth(nameStr)), NAME_MAX),
+            addr: Math.ceil(textWidth(addrStr)),
+            size: Math.ceil(textWidth(sizeStr)),
         };
     });
 

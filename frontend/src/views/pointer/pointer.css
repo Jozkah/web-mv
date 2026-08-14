@@ -1,0 +1,34 @@
+/* Pointer-chain resolver. Builds on pe.css. */
+
+.pt-base { width: 220px; }
+.pt-offs { width: 220px; }
+
+.pt-result {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.pt-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text);
+    opacity: 0.6;
+}
+
+.pt-final { color: var(--accent); font-weight: 600; }
+.pt-value { color: #7ee787; font-weight: 600; }
+
+.pt-body {
+    flex: 1 1 auto;
+    overflow: auto;
+    min-height: 0;
+}
+
+.pe-table tr.bad td { color: #ef4444; }
+.pe-btn.active { border-color: var(--accent-border); background: var(--accent-bg); color: var(--accent); }
+.pe-btn.sc-primary { border-color: var(--accent-border); background: var(--accent-bg); color: var(--accent); }

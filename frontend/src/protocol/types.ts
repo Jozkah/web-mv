@@ -66,6 +66,92 @@ export interface DisassembleRequest {
     size?: number;
 }
 
+// --- Extension agent (write-family) request payloads ------------------------
+
+export interface WriteRequest {
+    address: HexAddr;
+    data: string; // hex-encoded little-endian bytes to write at address
+}
+
+export interface DumpRequest {
+    module?: string; // omit to dump the main module
+    path?: string; // output filename (sandboxed to the agent data dir); agent picks a default if omitted
+}
+
+export interface ExportsRequest {
+    module?: string;
+}
+
+export interface ImportsRequest {
+    module?: string;
+}
+
+export interface IatRebuildRequest {
+    module?: string;
+}
+
+export interface SectionsRequest {
+    module?: string;
+}
+
+export interface RegionsRequest {
+    module?: string;
+}
+
+export type ScanValueType = "i32" | "u32" | "f32" | "i64" | "u64" | "unknown";
+export type ScanFilterOp =
+    | "unchanged"
+    | "changed"
+    | "increased"
+    | "decreased"
+    | "eq"
+    | "gt"
+    | "lt"
+    | "approx"; // float-fuzzy: |current - value_hex(or previous)| <= epsilon_hex
+
+export interface ScanNewRequest {
+    module?: string;
+    /** "module" (default) scans one module image; "process" sweeps committed heap/stack regions. */
+    scope?: "module" | "process";
+    /** "unknown" snapshots every aligned slot (no equality filter). */
+    value_type: ScanValueType;
+    /** Raw target bits as a hex number (e.g. int 100 → "0x64", float 12.5 → "0x41480000").
+     *  Required unless value_type is "unknown". */
+    value_hex?: string;
+}
+
+export interface ScanFilterRequest {
+    op: ScanFilterOp;
+    /** Raw comparison bits, required for eq/gt/lt/approx; omitted for the diff ops. */
+    value_hex?: string;
+    /** f32 bit pattern; only used by op "approx" (default 0.01). */
+    epsilon_hex?: string;
+}
+
+export type ScanClearRequest = Record<string, never>;
+
+export interface PeHeaderRequest {
+    module?: string;
+}
+
+export interface PeDirsRequest {
+    module?: string;
+}
+
+export interface ResourceTreeRequest {
+    module?: string;
+}
+
+export interface ScanGroupedRequest {
+    window?: number; // bytes each side of a hit, default 32, capped at 256
+}
+
+export interface RawScanRequest {
+    address: HexAddr;
+    length: number;
+    pattern: string; // IDA-style hex bytes, "?"/"??" wildcard, e.g. "48 8B ?? ?? E8"
+}
+
 // Response types are inferred from the Zod schemas so there is one source of truth.
 export type ErrorResult = z.infer<typeof s.errorResult>;
 export type PingResult = z.infer<typeof s.pingResult>;
@@ -80,6 +166,29 @@ export type RttiResolveResult = z.infer<typeof s.rttiResolveResult>;
 export type RttiResolveBatchResult = z.infer<typeof s.rttiResolveBatchResult>;
 export type EnumerateFunctionsResult = z.infer<typeof s.enumerateFunctionsResult>;
 export type DisassembleResult = z.infer<typeof s.disassembleResult>;
+export type WriteResult = z.infer<typeof s.writeResult>;
+export type DumpResult = z.infer<typeof s.dumpResult>;
+export type ExportsResult = z.infer<typeof s.exportsResult>;
+export type ImportsResult = z.infer<typeof s.importsResult>;
+export type IatRebuildResult = z.infer<typeof s.iatRebuildResult>;
+export type SectionsResult = z.infer<typeof s.sectionsResult>;
+export type RegionsResult = z.infer<typeof s.regionsResult>;
+export type ScanNewResult = z.infer<typeof s.scanNewResult>;
+export type ScanFilterResult = z.infer<typeof s.scanFilterResult>;
+export type ScanClearResult = z.infer<typeof s.scanClearResult>;
+export type ScanGroupedResult = z.infer<typeof s.scanGroupedResult>;
+export type RawScanResult = z.infer<typeof s.rawScanResult>;
+export type PeHeaderResult = z.infer<typeof s.peHeaderResult>;
+export type PeDirsResult = z.infer<typeof s.peDirsResult>;
+export type ResourceTreeResult = z.infer<typeof s.resourceTreeResult>;
+export type PeDirEntry = PeDirsResult["results"][number];
+export type ExportEntry = ExportsResult["results"][number];
+export type ImportEntry = ImportsResult["results"][number];
+export type IatRebuildEntry = IatRebuildResult["results"][number];
+export type SectionEntry = SectionsResult["results"][number];
+export type RegionEntry = RegionsResult["results"][number];
+export type ScanHit = ScanNewResult["results"][number];
+export type ScanGroupedHit = ScanGroupedResult["results"][number];
 
 // Element types of the array-bearing responses, for stores/components that work with
 // a single row rather than the whole frame.

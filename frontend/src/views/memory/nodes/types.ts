@@ -1,4 +1,4 @@
-import { formatFloat, formatInt } from "./format";
+import { formatBinary, formatFloat, formatInt } from "./format";
 
 // The node type registry. A node is either an interpreted field (a selectable primitive that
 // decodes its bytes into a display value) or an untyped fill (an internal tile with a byte
@@ -21,7 +21,11 @@ export type PrimitiveTypeId =
     | "bool"
     | "pointer"
     | "string"
-    | "wstring";
+    | "wstring"
+    | "bits8"
+    | "bits16"
+    | "bits32"
+    | "bits64";
 
 export type StringTypeId = "string" | "wstring";
 
@@ -80,6 +84,12 @@ export const NODE_TYPES: Record<NodeTypeId, NodeType> = {
     // (`length`). They decode length-aware in NodeRow, so the registry decode is unused.
     string: { id: "string", label: "string", size: 1, category: "string", decode: () => undefined },
     wstring: { id: "wstring", label: "wstring", size: 2, category: "string", decode: () => undefined },
+
+    // Bitfields: an unsigned integer shown as fixed-width binary, for flag/mask fields.
+    bits8: { id: "bits8", label: "bits8", size: 1, category: "uint", decode: (v, o) => formatBinary(v.getUint8(o), 8) },
+    bits16: { id: "bits16", label: "bits16", size: 2, category: "uint", decode: (v, o) => formatBinary(v.getUint16(o, true), 16) },
+    bits32: { id: "bits32", label: "bits32", size: 4, category: "uint", decode: (v, o) => formatBinary(v.getUint32(o, true), 32) },
+    bits64: { id: "bits64", label: "bits64", size: 8, category: "uint", decode: (v, o) => formatBinary(v.getBigUint64(o, true), 64) },
 };
 
 /** The selectable primitives, ordered, for the type-picker menus (fills are excluded). */
@@ -98,10 +108,51 @@ export const NODE_TYPE_LIST: readonly NodeType[] = [
     NODE_TYPES.pointer,
     NODE_TYPES.string,
     NODE_TYPES.wstring,
+    NODE_TYPES.bits8,
+    NODE_TYPES.bits16,
+    NODE_TYPES.bits32,
+    NODE_TYPES.bits64,
 ];
 
 export function nodeType(id: NodeTypeId): NodeType {
     return NODE_TYPES[id];
+}
+
+// Numeric value of a node's bytes for the value-history sparkline, or undefined for types that
+// aren't a single number (fills, bool, pointer, strings). 64-bit ints are coerced to Number - the
+// sparkline only needs a rough magnitude, not exactness.
+export function nodeNumericValue(view: DataView, offset: number, id: NodeTypeId): number | undefined {
+    if (offset + NODE_TYPES[id].size > view.byteLength) return undefined;
+    switch (id) {
+        case "int8": return view.getInt8(offset);
+        case "uint8": return view.getUint8(offset);
+        case "int16": return view.getInt16(offset, true);
+        case "uint16": return view.getUint16(offset, true);
+        case "int32": return view.getInt32(offset, true);
+        case "uint32": return view.getUint32(offset, true);
+        case "int64": return Number(view.getBigInt64(offset, true));
+        case "uint64": return Number(view.getBigUint64(offset, true));
+        case "float": return view.getFloat32(offset, true);
+        case "double": return view.getFloat64(offset, true);
+        default: return undefined;
+    }
+}
+
+// Build an SVG polyline `points` string for a sparkline of `values` in a `w`x`h` box. Flat when
+// all values are equal (min===max); newest value on the right.
+export function sparklinePoints(values: number[], w: number, h: number): string {
+    if (values.length < 2) return "";
+    let min = values[0];
+    let max = values[0];
+    for (const v of values) {
+        if (v < min) min = v;
+        if (v > max) max = v;
+    }
+    const span = max - min || 1;
+    const step = w / (values.length - 1);
+    return values
+        .map((v, i) => `${(i * step).toFixed(1)},${(h - ((v - min) / span) * h).toFixed(1)}`)
+        .join(" ");
 }
 
 /** Fixed size of a type by its unit; for a string this is the per-char width, not the span. */

@@ -1,11 +1,14 @@
-import { createSignal } from "solid-js";
+import { createSignal, onCleanup, onMount } from "solid-js";
 import { AppProvider } from "./AppContext";
 import { WorkspaceProvider } from "./WorkspaceContext";
 import { TopBar } from "./TopBar";
+import { TargetTabBar } from "./TargetTabBar";
 import { WorkspaceView } from "./WorkspaceView";
+import { useMemory } from "../views/memory/state/MemoryContext";
 import { StaticProvider } from "../views/static/state/StaticContext";
 import { MemoryProvider } from "../views/memory/state/MemoryContext";
 import { StringsProvider } from "../views/strings/state/StringsContext";
+import { DataTypesProvider } from "../views/datatypes/state/DataTypesContext";
 import { ScanCard } from "../scan/ScanCard";
 import { Window } from "../ui/Window";
 import "../ui/panels.css";
@@ -28,7 +31,9 @@ export default function App() {
                 <StaticProvider>
                     <MemoryProvider>
                         <StringsProvider>
-                            <Shell />
+                            <DataTypesProvider>
+                                <Shell />
+                            </DataTypesProvider>
                         </StringsProvider>
                     </MemoryProvider>
                 </StaticProvider>
@@ -50,9 +55,31 @@ function Shell() {
         }
     };
 
+    // Global undo/redo for the memory workspace: Ctrl+Z undo, Ctrl+Shift+Z / Ctrl+Y redo. Ignored
+    // while typing into a field so it never clobbers native text editing (Cmd for macOS parity).
+    const memory = useMemory();
+    onMount(() => {
+        const onKey = (e: KeyboardEvent) => {
+            const t = e.target as HTMLElement | null;
+            if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+            if (!(e.ctrlKey || e.metaKey)) return;
+            const k = e.key.toLowerCase();
+            if (k === "z" && !e.shiftKey) {
+                e.preventDefault();
+                memory.undo();
+            } else if ((k === "z" && e.shiftKey) || k === "y") {
+                e.preventDefault();
+                memory.redo();
+            }
+        };
+        window.addEventListener("keydown", onKey);
+        onCleanup(() => window.removeEventListener("keydown", onKey));
+    });
+
     return (
         <main class="app">
             <TopBar sigScanOpen={sigScanOpen()} onToggleSigScan={toggleSigScan} />
+            <TargetTabBar />
             <div class="view-host">
                 <div class="view-content">
                     <WorkspaceView />

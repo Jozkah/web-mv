@@ -14,6 +14,22 @@ export const RequestType = {
     RttiResolveBatch: "rtti_resolve_batch",
     EnumerateFunctions: "enumerate_functions",
     Disassemble: "disassemble",
+    // Extension agent (write-family). Served by the ext AngelScript agent on /agent-ext.
+    Write: "write",
+    Dump: "dump",
+    Exports: "exports",
+    Imports: "imports",
+    IatRebuild: "iat_rebuild",
+    Sections: "sections",
+    Regions: "regions",
+    ScanNew: "scan_new",
+    ScanFilter: "scan_filter",
+    ScanClear: "scan_clear",
+    ScanGrouped: "scan_grouped",
+    RawScan: "raw_scan",
+    PeHeader: "pe_header",
+    PeDirs: "pe_dirs",
+    ResourceTree: "resource_tree",
 } as const;
 export type RequestType = (typeof RequestType)[keyof typeof RequestType];
 
@@ -30,6 +46,21 @@ export const ResponseType = {
     RttiResolveBatch: "rtti_resolve_batch_result",
     EnumerateFunctions: "enumerate_functions_result",
     Disassemble: "disassemble_result",
+    Write: "write_result",
+    Dump: "dump_result",
+    Exports: "exports_result",
+    Imports: "imports_result",
+    IatRebuild: "iat_rebuild_result",
+    Sections: "sections_result",
+    Regions: "regions_result",
+    ScanNew: "scan_new_result",
+    ScanFilter: "scan_filter_result",
+    ScanClear: "scan_clear_result",
+    ScanGrouped: "scan_grouped_result",
+    RawScan: "raw_scan_result",
+    PeHeader: "pe_header_result",
+    PeDirs: "pe_dirs_result",
+    ResourceTree: "resource_tree_result",
     Error: "error",
 } as const;
 export type ResponseType = (typeof ResponseType)[keyof typeof ResponseType];
@@ -62,5 +93,14 @@ export const ErrorCode = {
     ReadFailed: 1005,
     EnumerateFailed: 1006,
     DisassembleFailed: 1007,
+    WriteFailed: 1008,
+    DumpFailed: 1009,
+    ExportsFailed: 1010,
+    // --- /agent-ext codes (web_mv_ext_agent.as) ---
+    NoDataDirectory: 1011,
+    UnsupportedValueType: 1020,
+    ModuleSizeUnavailable: 1021,
+    NoActiveScan: 1022,
+    InvalidPattern: 1023,
 } as const;
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

@@ -40,7 +40,17 @@
     background: transparent;
     border: 1px solid transparent;
     border-radius: 5px;
-    padding: 4px 12px;
+    padding: 4px 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.topbar-nav button svg {
+    opacity: 0.85;
+}
+.topbar-nav button:hover svg,
+.topbar-nav button.active svg {
+    opacity: 1;
 }
 .topbar-nav button:hover {
     border-color: var(--border);
@@ -74,6 +84,65 @@
     color: #10b981;
     border-color: rgba(16, 185, 129, 0.4);
     background: rgba(16, 185, 129, 0.12);
+}
+
+/* Target tabs: one chip per attached process, each backed by its own workspace key. Sits just
+   under the top bar. */
+.target-tabbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+}
+
+.target-tab {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+.target-tab:hover {
+    border-color: var(--accent-border);
+}
+.target-tab.active {
+    color: var(--accent);
+    background: var(--accent-bg);
+    border-color: var(--accent-border);
+}
+
+.target-tab .target-sub {
+    opacity: 0.7;
+}
+
+.target-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--border);
+}
+.target-dot.up {
+    background: #10b981;
+}
+
+.target-forget {
+    opacity: 0.6;
+    cursor: pointer;
+}
+.target-forget:hover {
+    opacity: 1;
+    color: var(--accent);
 }
 
 /* Hosts the active view plus the scan pop-down, which overlays the view (positioned against
