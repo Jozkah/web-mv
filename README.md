@@ -21,7 +21,7 @@ Powered by a lightweight Bun relay server and a SolidJS frontend, `web-mv` conne
 
 ### ⚡ Static View & Signature Tools
 * **Function Disassembler**: Enumerate and disassemble process functions with syntax highlighting and opcode inspection.
-* **IDA-Style SigMaker**: Generate minimal unique pattern scan signatures starting from any function or instruction, with automatic RIP-relative (`disp32`) and call/jump (`rel32`) wildcarding.
+* **IDA-Style SigMaker**: Generate minimal unique pattern scan signatures for **any address** — disassembled **code** or **raw data bytes** — not just functions, with automatic RIP-relative (`disp32`) and call/jump (`rel32`) wildcarding. Launch it from the top bar (type any address), the disassembly/function panels, or the memory view's `⚡ sig` button; a **Code / Raw bytes** toggle disassembles on the fly or reads bytes verbatim.
 * **Auto-Find Unique Signature**: Iteratively expands instruction depth to find the shortest 100% unique signature (1 hit in module) in live process memory.
 * **Interactive Byte Editor**: Visual byte breakdown with clickable pills to toggle wildcard masks per byte manually.
 * **Multi-Format Exporters**: One-click copy for **IDA Pattern** (`48 8B 05 ?? ??`), **C++ String & Mask**, **C++ Byte Array**, **C++ 0x?? Array**, and **Python**.
