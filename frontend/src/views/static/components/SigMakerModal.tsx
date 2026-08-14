@@ -1,33 +1,44 @@
-import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal, onMount } from "solid-js";
 import { useApp } from "../../../app/AppContext";
 import type { Instruction } from "../../../protocol/types";
-import { sigScanIda } from "../../../protocol/requests";
+import { disassemble, read, sigScanIda } from "../../../protocol/requests";
+import type { SigMakerTarget } from "../sigmaker/SigMakerContext";
 import {
     type AnalyzedInstruction,
     type SigFormat,
     type SigOptions,
     DEFAULT_SIG_OPTIONS,
     analyzeInstruction,
+    analyzeRawBytes,
     buildSigResult,
     findShortestUniqueSig,
+    resolveModule,
 } from "../sigmaker/sigmakerEngine";
 import "./sigmaker.css";
 
 export interface SigMakerModalProps {
-    moduleName: string;
-    functionName?: string | null;
-    functionAddress?: string;
-    instructions: Instruction[];
-    initialStartIndex?: number;
+    target: SigMakerTarget;
     onClose: () => void;
 }
 
+// How many bytes to read/disassemble by default when a target does not specify a size.
+const DEFAULT_LENGTH = 64;
+
 export function SigMakerModal(props: SigMakerModalProps) {
-    const { client, attached } = useApp();
+    const { client, attached, modules } = useApp();
+
+    // --- Source selection: which bytes we are signaturing ---------------------------------------
+    const [address, setAddress] = createSignal(props.target.address ?? "");
+    const [byteLen, setByteLen] = createSignal(props.target.size ?? DEFAULT_LENGTH);
+    const [source, setSource] = createSignal<"code" | "raw">(props.target.source ?? "code");
+    const [instructions, setInstructions] = createSignal<Instruction[]>(props.target.instructions ?? []);
+    const [rawHex, setRawHex] = createSignal("");
+    const [loading, setLoading] = createSignal(false);
+    const [loadError, setLoadError] = createSignal<string | null>(null);
 
     const [options, setOptions] = createSignal<SigOptions>({ ...DEFAULT_SIG_OPTIONS });
     const [mode, setMode] = createSignal<"auto" | "prologue" | "range">("auto");
-    const [startIndex, setStartIndex] = createSignal(props.initialStartIndex ?? 0);
+    const [startIndex, setStartIndex] = createSignal(0);
     const [rangeLength, setRangeLength] = createSignal(6);
     const [activeFormat, setActiveFormat] = createSignal<SigFormat>("ida");
     const [copied, setCopied] = createSignal(false);
@@ -40,47 +51,94 @@ export function SigMakerModal(props: SigMakerModalProps) {
     const [scanHits, setScanHits] = createSignal<number | null>(null);
     const [statusError, setStatusError] = createSignal<string | null>(null);
 
+    // Module scope: explicit from the target, else resolved from the address by containment.
+    const moduleName = () => props.target.moduleName || resolveModule(address(), modules.list()) || "";
+
     const toggleOption = (key: keyof SigOptions) => {
         setOptions((prev) => ({ ...prev, [key]: !prev[key] }));
         setManualOverrides(new Map());
     };
 
-    // Instruction subset according to mode
+    // Fetch the bytes for the current address/length/source. Code mode disassembles; raw mode
+    // reads bytes verbatim. Resets manual overrides and scan status since the byte set changed.
+    const load = async () => {
+        const addr = address().trim();
+        if (!addr) {
+            setLoadError("Enter an address");
+            return;
+        }
+        if (!attached()) {
+            setLoadError("Agent not attached");
+            return;
+        }
+        setLoading(true);
+        setLoadError(null);
+        setManualOverrides(new Map());
+        setScanHits(null);
+        try {
+            if (source() === "raw") {
+                const res = await read(client, { address: addr, size: byteLen() });
+                setRawHex(res.data ?? "");
+                setInstructions([]);
+            } else {
+                const res = await disassemble(client, { address: addr, size: byteLen() });
+                setInstructions(res.results ?? []);
+                setRawHex("");
+            }
+        } catch (err) {
+            setLoadError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const switchSource = (next: "code" | "raw") => {
+        if (source() === next) return;
+        setSource(next);
+        if (address().trim()) void load();
+    };
+
+    // On open: if the launcher already handed us disassembled instructions, use them; otherwise
+    // fetch from the seeded address. A blank target just waits for the user to type an address.
+    onMount(() => {
+        if (props.target.instructions?.length) return;
+        if (address().trim()) void load();
+    });
+
+    // Instruction subset according to mode (code mode only).
     const selectedInstructions = createMemo(() => {
-        const insts = props.instructions;
+        const insts = instructions();
         if (!insts || insts.length === 0) return [];
         const start = Math.max(0, Math.min(startIndex(), insts.length - 1));
 
         if (mode() === "prologue") {
             return insts.slice(0, Math.min(rangeLength(), insts.length));
         }
-        if (mode() === "range") {
-            return insts.slice(start, Math.min(start + rangeLength(), insts.length));
-        }
-        // mode === "auto": defaults to starting range or up to rangeLength until auto scan updates it
         return insts.slice(start, Math.min(start + rangeLength(), insts.length));
     });
 
-    // Base analyzed instructions
-    const analyzedInstructions = createMemo<AnalyzedInstruction[]>(() => {
+    // Base analyzed instructions (before manual overrides), branching on source.
+    const baseAnalyzed = createMemo<AnalyzedInstruction[]>(() => {
+        if (source() === "raw") {
+            const hex = rawHex();
+            return hex ? [analyzeRawBytes(hex, address())] : [];
+        }
         const opts = options();
-        const overrides = manualOverrides();
-        const insts = selectedInstructions();
+        return selectedInstructions().map((inst) => analyzeInstruction(inst, opts));
+    });
 
-        return insts.map((inst, instIdx) => {
-            const base = analyzeInstruction(inst, opts);
-            const bytes = base.bytes.map((b, byteIdx) => {
+    // Apply manual per-byte wildcard overrides on top of the base analysis.
+    const analyzedInstructions = createMemo<AnalyzedInstruction[]>(() => {
+        const overrides = manualOverrides();
+        return baseAnalyzed().map((inst, instIdx) => {
+            const bytes = inst.bytes.map((b, byteIdx) => {
                 const key = `${instIdx}_${byteIdx}`;
-                if (overrides.has(key)) {
-                    return { ...b, isWildcard: overrides.get(key)! };
-                }
-                return b;
+                return overrides.has(key) ? { ...b, isWildcard: overrides.get(key)! } : b;
             });
-            return { ...base, bytes };
+            return { ...inst, bytes };
         });
     });
 
-    // Calculated signature formats
     const sigResult = createMemo(() => buildSigResult(analyzedInstructions()));
 
     // Toggle byte wildcard manually
@@ -98,14 +156,14 @@ export function SigMakerModal(props: SigMakerModalProps) {
     // Live scan test for current signature
     const testUniqueness = async () => {
         const sig = sigResult().idaPattern;
-        if (!sig || !props.moduleName || !attached()) return;
+        if (!sig || !attached()) return;
 
         setScanning(true);
         setStatusError(null);
         try {
             const res = await sigScanIda(client, {
                 pattern: sig,
-                module: props.moduleName,
+                module: moduleName() || undefined,
                 find_all: true,
             });
             setScanHits(res.results?.length ?? 0);
@@ -117,9 +175,9 @@ export function SigMakerModal(props: SigMakerModalProps) {
         }
     };
 
-    // Auto find shortest unique signature
+    // Auto find shortest unique signature (code mode only).
     const runAutoFind = async () => {
-        if (!props.moduleName || !props.instructions.length || !attached()) return;
+        if (source() !== "code" || !instructions().length || !attached()) return;
 
         setScanning(true);
         setStatusError(null);
@@ -128,8 +186,8 @@ export function SigMakerModal(props: SigMakerModalProps) {
         try {
             const result = await findShortestUniqueSig(
                 client,
-                props.moduleName,
-                props.instructions,
+                moduleName(),
+                instructions(),
                 startIndex(),
                 options(),
                 15,
@@ -149,9 +207,9 @@ export function SigMakerModal(props: SigMakerModalProps) {
         }
     };
 
-    // Run auto-find on mount if in 'auto' mode
+    // Run auto-find once instructions are available in 'auto' mode (code only).
     createEffect(() => {
-        if (mode() === "auto" && attached() && props.instructions.length > 0) {
+        if (source() === "code" && mode() === "auto" && attached() && instructions().length > 0) {
             runAutoFind();
         }
     });
@@ -185,8 +243,9 @@ export function SigMakerModal(props: SigMakerModalProps) {
                     <div class="sigmaker-title-box">
                         <h3>⚡ IDA SigMaker</h3>
                         <span class="sigmaker-subtitle">
-                            {props.moduleName} {props.functionName ? `· ${props.functionName}` : ""}{" "}
-                            {props.functionAddress ? `(${props.functionAddress})` : ""}
+                            {moduleName() || "no module"}{" "}
+                            {props.target.functionName ? `· ${props.target.functionName}` : ""}{" "}
+                            {address() ? `(${address()})` : ""}
                         </span>
                     </div>
                     <button class="sigmaker-close-btn" onClick={props.onClose}>
@@ -195,65 +254,117 @@ export function SigMakerModal(props: SigMakerModalProps) {
                 </header>
 
                 <div class="sigmaker-body">
+                    {/* Source / target panel: address, length, code-vs-raw, load */}
+                    <div class="sigmaker-source">
+                        <div class="sigmaker-mode-group">
+                            <span class="sigmaker-label">Source:</span>
+                            <button
+                                classList={{ active: source() === "code" }}
+                                onClick={() => switchSource("code")}
+                                title="Disassemble at the address and signature the instructions"
+                            >
+                                🧩 Code
+                            </button>
+                            <button
+                                classList={{ active: source() === "raw" }}
+                                onClick={() => switchSource("raw")}
+                                title="Read raw bytes at the address (data / unresolved code)"
+                            >
+                                🧱 Raw bytes
+                            </button>
+                        </div>
+                        <label class="sigmaker-range-label">
+                            Address:
+                            <input
+                                type="text"
+                                class="sigmaker-addr-input"
+                                spellcheck={false}
+                                placeholder="0x…"
+                                value={address()}
+                                onInput={(e) => setAddress(e.currentTarget.value)}
+                                onKeyDown={(e) => e.key === "Enter" && void load()}
+                            />
+                        </label>
+                        <label class="sigmaker-range-label">
+                            Length:
+                            <input
+                                type="number"
+                                min="1"
+                                max="4096"
+                                value={byteLen()}
+                                onInput={(e) => setByteLen(Math.max(1, e.currentTarget.valueAsNumber || 1))}
+                            />
+                        </label>
+                        <button
+                            class="sigmaker-btn primary"
+                            onClick={() => void load()}
+                            disabled={loading() || !attached() || !address().trim()}
+                        >
+                            {loading() ? "Loading…" : "⟳ Load"}
+                        </button>
+                    </div>
+
                     {/* Control & Mode Panel */}
                     <div class="sigmaker-controls">
-                        <div class="sigmaker-mode-group">
-                            <span class="sigmaker-label">Mode:</span>
-                            <button
-                                classList={{ active: mode() === "auto" }}
-                                onClick={() => {
-                                    setMode("auto");
-                                    runAutoFind();
-                                }}
-                                title="Auto-expand instructions until signature is 100% unique in module"
-                            >
-                                ⚡ Auto Unique Sig
-                            </button>
-                            <button
-                                classList={{ active: mode() === "prologue" }}
-                                onClick={() => setMode("prologue")}
-                                title="Signature starting from function entry (+0x0)"
-                            >
-                                🎯 Function Prologue
-                            </button>
-                            <button
-                                classList={{ active: mode() === "range" }}
-                                onClick={() => setMode("range")}
-                                title="Custom instruction range selection"
-                            >
-                                🔍 Range Selection
-                            </button>
-                        </div>
+                        <Show when={source() === "code"}>
+                            <div class="sigmaker-mode-group">
+                                <span class="sigmaker-label">Mode:</span>
+                                <button
+                                    classList={{ active: mode() === "auto" }}
+                                    onClick={() => {
+                                        setMode("auto");
+                                        runAutoFind();
+                                    }}
+                                    title="Auto-expand instructions until signature is 100% unique in module"
+                                >
+                                    ⚡ Auto Unique Sig
+                                </button>
+                                <button
+                                    classList={{ active: mode() === "prologue" }}
+                                    onClick={() => setMode("prologue")}
+                                    title="Signature starting from function entry (+0x0)"
+                                >
+                                    🎯 Function Prologue
+                                </button>
+                                <button
+                                    classList={{ active: mode() === "range" }}
+                                    onClick={() => setMode("range")}
+                                    title="Custom instruction range selection"
+                                >
+                                    🔍 Range Selection
+                                </button>
+                            </div>
 
-                        <div class="sigmaker-options-group">
-                            <label class="sigmaker-check">
-                                <input
-                                    type="checkbox"
-                                    checked={options().wildcardRip}
-                                    onChange={() => toggleOption("wildcardRip")}
-                                />
-                                Wildcard RIP Disp (disp32)
-                            </label>
-                            <label class="sigmaker-check">
-                                <input
-                                    type="checkbox"
-                                    checked={options().wildcardCalls}
-                                    onChange={() => toggleOption("wildcardCalls")}
-                                />
-                                Wildcard Calls/Jmps (rel32)
-                            </label>
-                            <label class="sigmaker-check">
-                                <input
-                                    type="checkbox"
-                                    checked={options().wildcardImmediates}
-                                    onChange={() => toggleOption("wildcardImmediates")}
-                                />
-                                Wildcard Immediates
-                            </label>
-                        </div>
+                            <div class="sigmaker-options-group">
+                                <label class="sigmaker-check">
+                                    <input
+                                        type="checkbox"
+                                        checked={options().wildcardRip}
+                                        onChange={() => toggleOption("wildcardRip")}
+                                    />
+                                    Wildcard RIP Disp (disp32)
+                                </label>
+                                <label class="sigmaker-check">
+                                    <input
+                                        type="checkbox"
+                                        checked={options().wildcardCalls}
+                                        onChange={() => toggleOption("wildcardCalls")}
+                                    />
+                                    Wildcard Calls/Jmps (rel32)
+                                </label>
+                                <label class="sigmaker-check">
+                                    <input
+                                        type="checkbox"
+                                        checked={options().wildcardImmediates}
+                                        onChange={() => toggleOption("wildcardImmediates")}
+                                    />
+                                    Wildcard Immediates
+                                </label>
+                            </div>
+                        </Show>
 
                         <div class="sigmaker-actions-group">
-                            <Show when={mode() === "range" || mode() === "prologue"}>
+                            <Show when={source() === "code" && (mode() === "range" || mode() === "prologue")}>
                                 <label class="sigmaker-range-label">
                                     Inst count:
                                     <input
@@ -265,26 +376,28 @@ export function SigMakerModal(props: SigMakerModalProps) {
                                     />
                                 </label>
                             </Show>
-                            <Show when={mode() === "range"}>
+                            <Show when={source() === "code" && mode() === "range"}>
                                 <label class="sigmaker-range-label">
                                     Start inst:
                                     <input
                                         type="number"
                                         min="0"
-                                        max={Math.max(0, props.instructions.length - 1)}
+                                        max={Math.max(0, instructions().length - 1)}
                                         value={startIndex()}
-                                        onInput={(e) => setStartIndex(Math.max(0, Math.min(props.instructions.length - 1, e.currentTarget.valueAsNumber || 0)))}
+                                        onInput={(e) => setStartIndex(Math.max(0, Math.min(instructions().length - 1, e.currentTarget.valueAsNumber || 0)))}
                                     />
                                 </label>
                             </Show>
 
-                            <button
-                                class="sigmaker-btn primary"
-                                onClick={runAutoFind}
-                                disabled={scanning() || !attached()}
-                            >
-                                {scanning() ? "Scanning…" : "⚡ Auto Find Unique"}
-                            </button>
+                            <Show when={source() === "code"}>
+                                <button
+                                    class="sigmaker-btn primary"
+                                    onClick={runAutoFind}
+                                    disabled={scanning() || !attached()}
+                                >
+                                    {scanning() ? "Scanning…" : "⚡ Auto Find Unique"}
+                                </button>
+                            </Show>
 
                             <button
                                 class="sigmaker-btn"
@@ -295,6 +408,11 @@ export function SigMakerModal(props: SigMakerModalProps) {
                             </button>
                         </div>
                     </div>
+
+                    {/* Load error indicator */}
+                    <Show when={loadError()}>
+                        {(err) => <div class="sigmaker-status-bar"><span class="status-pill err">✖ {err()}</span></div>}
+                    </Show>
 
                     {/* Uniqueness Status Indicator */}
                     <div class="sigmaker-status-bar">
@@ -310,18 +428,18 @@ export function SigMakerModal(props: SigMakerModalProps) {
                                 when={scanHits() === 1}
                                 fallback={
                                     <span class="status-pill warn">
-                                        ⚠ {scanHits()} matches found in {props.moduleName} (Not Unique)
+                                        ⚠ {scanHits()} matches found in {moduleName() || "target"} (Not Unique)
                                     </span>
                                 }
                             >
                                 <span class="status-pill success">
-                                    ★ UNIQUE SIGNATURE (1 hit in {props.moduleName})
+                                    ★ UNIQUE SIGNATURE (1 hit in {moduleName() || "target"})
                                 </span>
                             </Show>
                         </Show>
 
                         <div class="sigmaker-meta-info">
-                            <span>{sigResult().instructionCount} instructions</span>
+                            <span>{sigResult().instructionCount} {source() === "raw" ? "block" : "instructions"}</span>
                             <span>·</span>
                             <span>{sigResult().totalBytes} bytes ({sigResult().wildcardCount} wildcarded)</span>
                         </div>

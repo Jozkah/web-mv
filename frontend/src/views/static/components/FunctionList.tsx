@@ -9,7 +9,7 @@ import { RenameInput } from "../../../ui/RenameInput";
 import { StatusOverlay } from "../../../ui/StatusOverlay";
 import { createListVirtualizer } from "../../../ui/virtualList";
 import { resolveFunctionHits, type FunctionSigHit } from "../../../scan/functionSigSearch";
-import { SigMakerModal } from "./SigMakerModal";
+import { useSigMaker } from "../sigmaker/SigMakerContext";
 
 const ROW_HEIGHT = 28;
 
@@ -36,9 +36,8 @@ type SearchMode = "text" | "sig";
 
 export function FunctionList() {
     const { client, attached, modules, annotations } = useApp();
-    const { functions, selection, selectFunction, disasm } = useStatic();
-
-    const [sigMakerTarget, setSigMakerTarget] = createSignal<{ module: string; address: string; name?: string; size: number } | null>(null);
+    const { functions, selection, selectFunction } = useStatic();
+    const sigMaker = useSigMaker();
 
     const moduleName = () => selection.selectedModule();
     const entry = () => {
@@ -232,9 +231,8 @@ export function FunctionList() {
     };
 
     const launchSigMaker = (module: string, fn: { address: string; size: number; rva: string }) => {
-        disasm.ensure(fn.address, fn.size);
         const name = annotations.nameOf(module, fn.rva);
-        setSigMakerTarget({ module, address: fn.address, name, size: fn.size });
+        sigMaker.open({ moduleName: module, functionName: name, address: fn.address, size: fn.size, source: "code" });
     };
 
     return (
@@ -467,26 +465,6 @@ export function FunctionList() {
                     <StatusOverlay message={errorMsg()} error />
                 </div>
             </Panel>
-
-            <Show when={sigMakerTarget()}>
-                {(target) => {
-                    const entry = disasm.get(target().address);
-                    const ready = entry?.status === "ready" ? entry.data : undefined;
-                    return (
-                        <Show when={ready}>
-                            {(d) => (
-                                <SigMakerModal
-                                    moduleName={target().module}
-                                    functionName={target().name}
-                                    functionAddress={target().address}
-                                    instructions={d().results}
-                                    onClose={() => setSigMakerTarget(null)}
-                                />
-                            )}
-                        </Show>
-                    );
-                }}
-            </Show>
         </>
     );
 }

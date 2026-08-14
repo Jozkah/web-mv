@@ -1,4 +1,4 @@
-import { Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { Show, createEffect, createMemo, onCleanup, onMount } from "solid-js";
 import type { EditorView } from "@codemirror/view";
 import { useApp } from "../../../app/AppContext";
 import { useStatic } from "../state/StaticContext";
@@ -11,7 +11,7 @@ import { StatusOverlay } from "../../../ui/StatusOverlay";
 import { buildDoc, createEditor, isComplete, setContent, type OperandLabel } from "./disasm/editor";
 import { inferPrototype } from "../state/analysisXref";
 import { defaultName } from "../../../state/address";
-import { SigMakerModal } from "./SigMakerModal";
+import { useSigMaker } from "../sigmaker/SigMakerContext";
 
 // Right panel: CodeMirror-backed disassembly of the selected function. Ensures the disasm
 // is fetched (cached by address) when the selection changes, and feeds the resulting
@@ -23,7 +23,7 @@ export function DisassemblyView() {
     const { annotations, modules } = useApp();
     const { selection, disasm } = useStatic();
     const nav = useNavigation();
-    const [showSigMaker, setShowSigMaker] = createSignal(false);
+    const sigMaker = useSigMaker();
 
     // A jumpable operand click records history and navigates to the target (into the containing
     // function for code refs; the owning module for data refs).
@@ -128,7 +128,19 @@ export function DisassemblyView() {
                 actions={
                     <Show when={selection.selectedFunction() && ready()?.results.length}>
                         <button
-                            onClick={() => setShowSigMaker(true)}
+                            onClick={() => {
+                                const fn = selection.selectedFunction();
+                                const d = ready();
+                                if (!fn || !d) return;
+                                sigMaker.open({
+                                    moduleName: fn.module,
+                                    functionName: title() || undefined,
+                                    address: fn.address,
+                                    size: fn.size,
+                                    source: "code",
+                                    instructions: d.results,
+                                });
+                            }}
                             title="Open IDA SigMaker for this function"
                             style={{ font: "inherit", "font-size": "12px", cursor: "pointer", padding: "2px 8px" }}
                         >
@@ -153,21 +165,6 @@ export function DisassemblyView() {
                     <StatusOverlay message={errorMsg()} error />
                 </div>
             </Panel>
-
-            <Show when={showSigMaker() && selection.selectedFunction() && ready()}>
-                {(d) => {
-                    const fn = selection.selectedFunction()!;
-                    return (
-                        <SigMakerModal
-                            moduleName={fn.module}
-                            functionName={title() || undefined}
-                            functionAddress={fn.address}
-                            instructions={d().results}
-                            onClose={() => setShowSigMaker(false)}
-                        />
-                    );
-                }}
-            </Show>
         </>
     );
 }

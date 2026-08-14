@@ -1,6 +1,7 @@
-import { createEffect, createSignal } from "solid-js";
+import { Show, createEffect, createSignal } from "solid-js";
 import { parseAddressExpr, toHex } from "../../../state/address";
 import { useMemory } from "../state/MemoryContext";
+import { useSigMaker } from "../../static/sigmaker/SigMakerContext";
 
 // The address bar for the active class: an address-expression input that resolves to a
 // canonical address live. Terms are hex by default (a bare value or
@@ -17,6 +18,7 @@ function normalize(text: string): string | undefined {
 
 export function AddressBar() {
     const memory = useMemory();
+    const sigMaker = useSigMaker();
     const [text, setText] = createSignal(memory.activeClass()?.address ?? "");
 
     // Resync the field only when the active class itself changes (switching tabs/classes), not
@@ -55,6 +57,17 @@ export function AddressBar() {
                         if (n) setText(n);
                     }}
                 />
+                <Show when={normalize(text())}>
+                    {(addr) => (
+                        <button
+                            class="address-sig-btn"
+                            title="Make an IDA signature for the bytes at this address"
+                            onClick={() => sigMaker.open({ address: addr(), source: "raw" })}
+                        >
+                            ⚡ sig
+                        </button>
+                    )}
+                </Show>
             </div>
         </div>
     );

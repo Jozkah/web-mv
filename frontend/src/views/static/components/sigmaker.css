@@ -1,4 +1,4 @@
-/* SigMaker Modal CSS */
+/* SigMaker Modal CSS — uses the app theme tokens (index.css) so it follows light/dark. */
 
 .sigmaker-backdrop {
     position: fixed;
@@ -6,7 +6,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.65);
+    background-color: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(4px);
     z-index: 9999;
     display: flex;
@@ -22,18 +22,18 @@
 }
 
 .sigmaker-modal {
-    background: #14171d;
-    border: 1px solid #2a2f3a;
+    background: var(--bg);
+    border: 1px solid var(--border);
     border-radius: 8px;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow);
     width: 860px;
     max-width: 95vw;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    color: var(--text, #e2e8f0);
-    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    font-family: var(--sans);
 }
 
 .sigmaker-header {
@@ -41,15 +41,15 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 18px;
-    background: #1a1e26;
-    border-bottom: 1px solid #2a2f3a;
+    background: var(--code-bg);
+    border-bottom: 1px solid var(--border);
 }
 
 .sigmaker-title-box h3 {
     margin: 0;
     font-size: 15px;
     font-weight: 600;
-    color: #38bdf8;
+    color: var(--accent);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -57,14 +57,14 @@
 
 .sigmaker-subtitle {
     font-size: 12px;
-    color: #94a3b8;
+    color: var(--text);
     font-family: var(--mono, monospace);
 }
 
 .sigmaker-close-btn {
     background: transparent;
     border: none;
-    color: #94a3b8;
+    color: var(--text);
     font-size: 16px;
     cursor: pointer;
     padding: 4px 8px;
@@ -72,8 +72,8 @@
 }
 
 .sigmaker-close-btn:hover {
-    background: #2a2f3a;
-    color: #f87171;
+    background: var(--accent-bg);
+    color: #ef4444;
 }
 
 .sigmaker-body {
@@ -84,14 +84,27 @@
     overflow-y: auto;
 }
 
-/* Controls & Options Bar */
+/* Panels (source / controls / status) */
+.sigmaker-controls,
+.sigmaker-source,
+.sigmaker-status-bar {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+
 .sigmaker-controls {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    background: #181c24;
-    border: 1px solid #262b36;
-    border-radius: 6px;
+    padding: 10px 12px;
+}
+
+.sigmaker-source {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
     padding: 10px 12px;
 }
 
@@ -105,13 +118,16 @@
 .sigmaker-label {
     font-size: 12px;
     font-weight: 600;
-    color: #94a3b8;
+    color: var(--text);
 }
 
-.sigmaker-mode-group button {
-    background: #222733;
-    border: 1px solid #333a4a;
-    color: #cbd5e1;
+/* Neutral (outline) buttons — mode toggles, actions, small buttons */
+.sigmaker-mode-group button,
+.sigmaker-btn,
+.address-sig-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-h);
     font-size: 12px;
     padding: 4px 10px;
     border-radius: 4px;
@@ -119,16 +135,31 @@
     transition: all 0.12s ease;
 }
 
-.sigmaker-mode-group button:hover {
-    background: #2a3142;
-    border-color: #475569;
+.sigmaker-mode-group button:hover,
+.sigmaker-btn:hover:not(:disabled),
+.address-sig-btn:hover {
+    background: var(--accent-bg);
+    border-color: var(--accent-border);
 }
 
-.sigmaker-mode-group button.active {
-    background: #0284c7;
-    border-color: #38bdf8;
+/* Active / primary buttons — solid purple, white text (readable in both themes) */
+.sigmaker-mode-group button.active,
+.sigmaker-btn.primary {
+    background: #8b5cf6;
+    border-color: #7c3aed;
     color: #ffffff;
     font-weight: 600;
+}
+
+.sigmaker-mode-group button.active:hover,
+.sigmaker-btn.primary:hover:not(:disabled) {
+    background: #7c3aed;
+    border-color: #7c3aed;
+}
+
+.sigmaker-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .sigmaker-options-group {
@@ -136,7 +167,7 @@
     align-items: center;
     gap: 16px;
     font-size: 12px;
-    color: #cbd5e1;
+    color: var(--text-h);
 }
 
 .sigmaker-check {
@@ -145,6 +176,11 @@
     gap: 6px;
     cursor: pointer;
     user-select: none;
+}
+
+.sigmaker-check input,
+.address-sig-btn {
+    accent-color: var(--accent);
 }
 
 .sigmaker-check input {
@@ -158,53 +194,38 @@
 
 .sigmaker-range-label {
     font-size: 12px;
-    color: #94a3b8;
+    color: var(--text);
     display: flex;
     align-items: center;
     gap: 6px;
+}
+
+.sigmaker-actions-group .sigmaker-range-label {
     margin-right: auto;
 }
 
-.sigmaker-range-label input {
-    width: 48px;
-    background: #0f1217;
-    border: 1px solid #333a4a;
-    color: #f1f5f9;
+.sigmaker-range-label input,
+.sigmaker-addr-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-h);
     border-radius: 4px;
     padding: 2px 6px;
     font-size: 12px;
 }
 
-.sigmaker-btn {
-    background: #222733;
-    border: 1px solid #3b4252;
-    color: #e2e8f0;
-    font-size: 12px;
-    padding: 5px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.12s ease;
+.sigmaker-range-label input {
+    width: 48px;
 }
 
-.sigmaker-btn:hover:not(:disabled) {
-    background: #2d3445;
-    border-color: #64748b;
+.sigmaker-addr-input {
+    font-family: var(--mono, monospace);
+    padding: 4px 8px;
+    width: 220px;
 }
 
-.sigmaker-btn.primary {
-    background: #0284c7;
-    border-color: #0369a1;
-    color: #ffffff;
-    font-weight: 600;
-}
-
-.sigmaker-btn.primary:hover:not(:disabled) {
-    background: #0369a1;
-}
-
-.sigmaker-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.address-sig-btn {
+    white-space: nowrap;
 }
 
 /* Status Bar */
@@ -213,9 +234,6 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
-    background: #181c24;
-    border: 1px solid #262b36;
-    border-radius: 6px;
 }
 
 .status-pill {
@@ -231,24 +249,24 @@
 .status-pill.success {
     background: rgba(34, 197, 94, 0.15);
     border: 1px solid rgba(34, 197, 94, 0.35);
-    color: #4ade80;
+    color: #16a34a;
 }
 
 .status-pill.warn {
     background: rgba(245, 158, 11, 0.15);
     border: 1px solid rgba(245, 158, 11, 0.35);
-    color: #fbbf24;
+    color: #d97706;
 }
 
 .status-pill.err {
     background: rgba(239, 68, 68, 0.15);
     border: 1px solid rgba(239, 68, 68, 0.35);
-    color: #f87171;
+    color: #dc2626;
 }
 
 .sigmaker-meta-info {
     font-size: 12px;
-    color: #94a3b8;
+    color: var(--text);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -256,15 +274,19 @@
 }
 
 /* Instruction list & Byte pills */
+.sigmaker-inst-list,
+.sigmaker-exporter {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+
 .sigmaker-inst-list {
     display: flex;
     flex-direction: column;
     gap: 6px;
     max-height: 220px;
     overflow-y: auto;
-    background: #0f1217;
-    border: 1px solid #222733;
-    border-radius: 6px;
     padding: 8px;
 }
 
@@ -280,15 +302,15 @@
 }
 
 .sigmaker-inst-row:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--accent-bg);
 }
 
 .inst-addr {
-    color: #3b82f6;
+    color: var(--accent);
 }
 
 .inst-text {
-    color: #e2e8f0;
+    color: var(--text-h);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -301,9 +323,9 @@
 }
 
 .byte-pill {
-    background: #1e2430;
-    border: 1px solid #333d52;
-    color: #cbd5e1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-h);
     font-family: var(--mono, monospace);
     font-size: 11px;
     padding: 1px 5px;
@@ -314,14 +336,14 @@
 }
 
 .byte-pill:hover {
-    border-color: #38bdf8;
-    color: #ffffff;
+    border-color: var(--accent);
+    background: var(--accent-bg);
 }
 
 .byte-pill.wildcard {
     background: rgba(239, 68, 68, 0.15);
     border-color: rgba(239, 68, 68, 0.4);
-    color: #f87171;
+    color: #dc2626;
     font-weight: bold;
 }
 
@@ -329,17 +351,14 @@
 .sigmaker-exporter {
     display: flex;
     flex-direction: column;
-    background: #0f1217;
-    border: 1px solid #222733;
-    border-radius: 6px;
     overflow: hidden;
 }
 
 .exporter-tabs {
     display: flex;
     align-items: center;
-    background: #181c24;
-    border-bottom: 1px solid #222733;
+    background: var(--code-bg);
+    border-bottom: 1px solid var(--border);
     padding: 4px 8px 0 8px;
     gap: 4px;
 }
@@ -348,7 +367,7 @@
     background: transparent;
     border: none;
     border-bottom: 2px solid transparent;
-    color: #94a3b8;
+    color: var(--text);
     font-size: 12px;
     padding: 6px 12px;
     cursor: pointer;
@@ -356,19 +375,19 @@
 }
 
 .exporter-tabs button:hover {
-    color: #e2e8f0;
+    color: var(--text-h);
 }
 
 .exporter-tabs button.active {
-    color: #38bdf8;
-    border-bottom-color: #38bdf8;
+    color: var(--accent);
+    border-bottom-color: var(--accent);
     font-weight: 600;
 }
 
 .exporter-tabs .copy-btn {
     margin-left: auto;
     border-bottom: none;
-    background: #0284c7;
+    background: #8b5cf6;
     color: #ffffff;
     border-radius: 4px;
     padding: 4px 10px;
@@ -377,7 +396,8 @@
 }
 
 .exporter-tabs .copy-btn:hover {
-    background: #0369a1;
+    background: #7c3aed;
+    color: #ffffff;
 }
 
 .exporter-code {
@@ -385,8 +405,8 @@
     padding: 12px;
     font-family: var(--mono, monospace);
     font-size: 12px;
-    color: #38bdf8;
-    background: #0b0d11;
+    color: var(--accent);
+    background: var(--bg);
     overflow-x: auto;
     white-space: pre-wrap;
     word-break: break-all;

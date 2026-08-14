@@ -9,6 +9,7 @@ import { StaticProvider } from "../views/static/state/StaticContext";
 import { MemoryProvider } from "../views/memory/state/MemoryContext";
 import { StringsProvider } from "../views/strings/state/StringsContext";
 import { DataTypesProvider } from "../views/datatypes/state/DataTypesContext";
+import { SigMakerProvider } from "../views/static/sigmaker/SigMakerContext";
 import { ScanCard } from "../scan/ScanCard";
 import { Window } from "../ui/Window";
 import "../ui/panels.css";
@@ -32,7 +33,9 @@ export default function App() {
                     <MemoryProvider>
                         <StringsProvider>
                             <DataTypesProvider>
-                                <Shell />
+                                <SigMakerProvider>
+                                    <Shell />
+                                </SigMakerProvider>
                             </DataTypesProvider>
                         </StringsProvider>
                     </MemoryProvider>

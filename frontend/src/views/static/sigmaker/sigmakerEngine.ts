@@ -1,6 +1,7 @@
 import type { Instruction } from "../../../protocol/types";
 import { sigScanIda } from "../../../protocol/requests";
 import type { AxClient } from "../../../transport/AxClient";
+import { parseHex } from "../../../state/address";
 
 export interface SigOptions {
     wildcardRip: boolean;
@@ -151,6 +152,42 @@ export function analyzeInstruction(
         text: inst.text,
         bytes: analyzed,
     };
+}
+
+/**
+ * Builds a single pseudo-instruction from a raw hex-byte string (no disassembly). Every byte is
+ * kept literal; the caller / user then wildcards bytes by hand via the byte-pill UI. Used for
+ * signatures over data or code the disassembler did not resolve.
+ */
+export function analyzeRawBytes(rawHex: string, address = "0x0"): AnalyzedInstruction {
+    const bytes: AnalyzedByte[] = [];
+    for (let i = 0; i + 1 < rawHex.length; i += 2) {
+        bytes.push({ hex: rawHex.substring(i, i + 2).toUpperCase(), isWildcard: false });
+    }
+    return {
+        address,
+        length: bytes.length,
+        text: `raw data · ${bytes.length} bytes`,
+        bytes,
+    };
+}
+
+/** Resolves which loaded module contains an address, by base/size containment. */
+export function resolveModule(
+    address: string,
+    modules: readonly { name: string; base: string; size: number }[],
+): string | undefined {
+    let a: bigint;
+    try {
+        a = parseHex(address);
+    } catch {
+        return undefined;
+    }
+    for (const m of modules) {
+        const base = parseHex(m.base);
+        if (a >= base && a < base + BigInt(m.size)) return m.name;
+    }
+    return undefined;
 }
 
 /**

@@ -1,11 +1,11 @@
 import { Show } from "solid-js";
 import { useApp } from "./AppContext";
-import { useWorkspace } from "./WorkspaceContext";
 import { useMemory } from "../views/memory/state/MemoryContext";
 import { exportSession, importSession } from "../state/session";
 import { downloadText, pickTextFile } from "../state/fileio";
 import { Icon } from "./workspace/icons";
 import { NavControls } from "./NavControls";
+import { useSigMaker } from "../views/static/sigmaker/SigMakerContext";
 
 // The application top bar: global tool actions (signature scan window, SigMaker) on the left and
 // process / connection status on the right. Workspace layout is no longer configured here - tabs
@@ -13,8 +13,8 @@ import { NavControls } from "./NavControls";
 
 export function TopBar(props: { sigScanOpen: boolean; onToggleSigScan: () => void }) {
     const app = useApp();
-    const ws = useWorkspace();
     const memory = useMemory();
+    const sigMaker = useSigMaker();
 
     const agentUp = () => app.pingData() !== undefined;
     const agentCount = () => app.activeAgents();
@@ -44,8 +44,8 @@ export function TopBar(props: { sigScanOpen: boolean; onToggleSigScan: () => voi
                 </button>
 
                 <button
-                    title="Generate a unique IDA signature pattern for a function"
-                    onClick={() => ws.openOrFocusView("static")}
+                    title="Generate an IDA signature for any address (code or raw bytes)"
+                    onClick={() => sigMaker.open({})}
                 >
                     <Icon name="static" size={15} />
                     SigMaker
