@@ -14,8 +14,9 @@
 }
 
 .palette {
-    width: min(620px, 92vw);
-    max-height: 66vh;
+    position: relative;
+    width: min(680px, 94vw);
+    max-height: 70vh;
     display: flex;
     flex-direction: column;
     background: var(--surface-float);
@@ -137,6 +138,311 @@
     text-align: center;
     font-size: var(--fs-ui);
     color: var(--ink-3);
+}
+
+/* Clear-query button in the input row. */
+.palette-clear {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    color: var(--ink-3);
+    background: transparent;
+    border: none;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+}
+.palette-clear:hover {
+    color: var(--ink);
+    background: var(--surface-4);
+}
+
+/* Parsed-filter chips (prefix / scope / group / negative) shown under the input. */
+.palette-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--line-soft);
+}
+.palette-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--accent-soft);
+    background: var(--accent-bg);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    padding: 2px 6px;
+    cursor: pointer;
+}
+.palette-chip:hover {
+    color: var(--ink);
+}
+.palette-chip--error {
+    color: var(--danger, #d66);
+    background: transparent;
+    cursor: default;
+}
+
+/* Body splits into the result list and an optional preview pane. */
+.palette-body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+}
+.palette-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* Grouped list. */
+.palette-group {
+    list-style: none;
+}
+.palette-group-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px 3px;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+.palette-group-count {
+    font-family: var(--mono);
+    color: var(--ink-3);
+}
+.palette-group-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.palette-item.disabled {
+    opacity: 0.55;
+}
+.palette-item-reason {
+    font-size: var(--fs-micro);
+    color: var(--danger, #d66);
+}
+.palette-item-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--fs-body);
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.palette-item-title mark {
+    background: transparent;
+    color: var(--accent);
+    font-weight: 600;
+}
+.palette-badge {
+    font-size: 9.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    background: var(--surface-4);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    padding: 0 4px;
+}
+.palette-badge[data-kind="main"] {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+.palette-item-more {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    color: var(--ink-3);
+    background: transparent;
+    border: none;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    opacity: 0;
+}
+.palette-item.active .palette-item-more,
+.palette-item:hover .palette-item-more {
+    opacity: 1;
+}
+.palette-item-more:hover {
+    color: var(--ink);
+    background: var(--surface-4);
+}
+
+/* Preview pane (wide screens only). */
+.palette-preview {
+    flex: 0 0 220px;
+    border-left: 1px solid var(--line-soft);
+    padding: 12px;
+    overflow-y: auto;
+    font-size: var(--fs-ui);
+}
+.palette-preview-title {
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 8px;
+    word-break: break-word;
+}
+.palette-preview-rows {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 3px 10px;
+    margin: 0;
+}
+.palette-preview-rows dt {
+    color: var(--ink-3);
+}
+.palette-preview-rows dd {
+    margin: 0;
+    font-family: var(--mono);
+    color: var(--ink-2);
+    word-break: break-all;
+}
+.palette-preview-body {
+    margin-top: 10px;
+    color: var(--ink-2);
+    white-space: pre-wrap;
+}
+
+/* Footer with count and key hints. */
+.palette-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 14px;
+    border-top: 1px solid var(--line-soft);
+    font-size: 11px;
+    color: var(--ink-3);
+}
+.palette-loading {
+    color: var(--accent-soft);
+}
+.palette-hints kbd {
+    font-family: var(--mono);
+    font-size: 10px;
+    background: var(--surface-4);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    padding: 0 4px;
+    margin: 0 1px;
+}
+
+.palette-provider-errors {
+    padding: 6px 12px;
+    border-top: 1px solid var(--line-soft);
+}
+.palette-provider-error {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--danger, #d66);
+}
+
+.palette-hints-empty {
+    text-align: left;
+    color: var(--ink-3);
+}
+.palette-hints-empty ul {
+    margin: 8px 0 0;
+    padding-left: 16px;
+    line-height: 1.9;
+}
+.palette-hints-empty code,
+.palette-empty code {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent-soft);
+    background: var(--surface-4);
+    border-radius: var(--r-sm);
+    padding: 0 4px;
+}
+
+/* Action submenu — a small popover over the palette. */
+.palette-actionmenu-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4, 6, 9, 0.35);
+    border-radius: var(--r-lg);
+}
+.palette-actionmenu {
+    width: min(360px, 80%);
+    max-height: 70%;
+    overflow-y: auto;
+    background: var(--surface-float);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    box-shadow: var(--elev-pop);
+    padding: 6px;
+}
+.palette-actionmenu-head {
+    padding: 6px 8px;
+    font-size: 11px;
+    color: var(--ink-3);
+    border-bottom: 1px solid var(--line-soft);
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.palette-actionmenu-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 7px 9px;
+    border: none;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--ink);
+    font-size: var(--fs-body);
+    text-align: left;
+    cursor: pointer;
+}
+.palette-actionmenu-item.active {
+    background: var(--accent-bg);
+}
+.palette-actionmenu-item.destructive {
+    color: var(--danger, #d66);
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Narrow screens: drop the preview pane. */
+@media (max-width: 680px) {
+    .palette-preview {
+        display: none;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

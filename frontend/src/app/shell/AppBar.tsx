@@ -42,6 +42,11 @@ export function AppBar() {
             if (mod && k === "k") {
                 e.preventDefault();
                 shell.openPalette();
+            } else if (mod && k === "p" && !e.shiftKey) {
+                // Ctrl/Cmd+P opens the universal search (file/symbol-oriented). Overrides the browser
+                // print dialog inside the app, matching VS Code's quick-open convention.
+                e.preventDefault();
+                shell.openPalette();
             } else if (mod && k === "g") {
                 e.preventDefault();
                 shell.openGoto();
@@ -89,9 +94,9 @@ export function AppBar() {
                 </div>
             </div>
 
-            <button class="command-field" onClick={() => shell.openPalette()} title="Command palette">
+            <button class="command-field" onClick={() => shell.openPalette()} title="Universal search — commands, modules, functions, addresses">
                 <Icon name="command" size={15} />
-                <span class="command-field-text">Search commands, go to address…</span>
+                <span class="command-field-text">Search everything — commands, modules, addresses…</span>
                 <span class="command-field-kbd">{isMac() ? "⌘K" : "Ctrl K"}</span>
             </button>
 
