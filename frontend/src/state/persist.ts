@@ -26,6 +26,20 @@ export function load<T>(key: string, version: number): T | undefined {
     }
 }
 
+/** The stored envelope with its version tag, for callers that migrate older schemas instead of
+ *  discarding them (the memory viewer's class definitions). */
+export function loadRaw(key: string): { v: number; data: unknown } | undefined {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return undefined;
+        const env = JSON.parse(raw) as Envelope | null;
+        if (!env || typeof env.v !== "number") return undefined;
+        return { v: env.v, data: env.data };
+    } catch {
+        return undefined;
+    }
+}
+
 export function save(key: string, version: number, data: unknown): void {
     try {
         localStorage.setItem(key, JSON.stringify({ v: version, data } satisfies Envelope));

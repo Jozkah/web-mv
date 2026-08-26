@@ -154,6 +154,119 @@
     display: flex;
 }
 
+/* Actionable empty state overlay: a compact centred card (not a full-canvas splash). */
+.mem-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: var(--surface-2);
+}
+.mem-empty-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    max-width: 420px;
+    padding: 18px 20px;
+    background: var(--surface-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--elev-1);
+}
+.mem-empty-title {
+    margin: 0;
+    font-family: var(--heading);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+}
+.mem-empty-sub {
+    margin: 0;
+    font-size: var(--fs-ui);
+    line-height: 1.5;
+    color: var(--ink-2);
+}
+.mem-empty-sub code {
+    font-size: 11.5px;
+    padding: 1px 5px;
+}
+.mem-empty-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+.mem-empty-primary,
+.mem-empty-secondary {
+    height: 32px;
+    padding: 0 14px;
+    font-size: var(--fs-ui);
+    font-weight: 500;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+}
+.mem-empty-primary {
+    color: var(--on-accent);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+}
+.mem-empty-primary:hover {
+    background: var(--accent-strong);
+    border-color: var(--accent-strong);
+}
+.mem-empty-secondary {
+    color: var(--ink);
+    background: var(--surface-3);
+    border: 1px solid var(--line);
+}
+.mem-empty-secondary:hover {
+    border-color: var(--accent-line);
+    color: var(--accent);
+}
+.mem-empty-note {
+    margin: 6px 0 0;
+    font-size: var(--fs-micro);
+    color: var(--ink-3);
+}
+.mem-empty-recent {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-soft);
+    width: 100%;
+}
+.mem-empty-recent-head {
+    font-size: var(--fs-micro);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-right: 2px;
+}
+.mem-empty-chip {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 4px 9px;
+    font-family: var(--mono);
+    font-size: var(--fs-micro);
+    color: var(--accent);
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-line);
+    border-radius: 999px;
+    cursor: pointer;
+}
+.mem-empty-chip:hover {
+    background: var(--accent-bg-strong);
+}
+
 .node-grid {
     /* hex is a firm 200px so a full 8-byte row never clips; name + value are the minmax(0,...)
        tracks that shrink to fit the container, keeping the actions cell (✕) on-screen. */
@@ -246,7 +359,7 @@
 
 .col-value .changed,
 .col-hex .changed {
-    background: rgba(234, 179, 8, 0.35);
+    background: rgba(226, 161, 58, 0.32);
     color: var(--text-h);
     border-radius: 2px;
 }
@@ -274,10 +387,10 @@
 /* Follow-pointer pill on pointer rows: spawns a new class at the target and switches to it.
    Sits just right of the decoded value, before the RTTI class tag. Kept visible (not hover-
    gated) so the action is discoverable; fills accent on hover. */
-/* Distinct teal so the action reads separately from the purple RTTI class tag beside it;
+/* A lighter steel so the action reads separately from the base-accent RTTI class tag beside it;
    same box metrics as .class-tag (font/padding/border/radius) so the two sit at equal height. */
 .ptr-follow {
-    --fc: #14b8a6;
+    --fc: var(--accent-strong);
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
@@ -349,30 +462,30 @@
     --type-color: var(--text);
 }
 .type-int {
-    --type-color: #3b82f6;
+    --type-color: var(--accent);
 }
 .type-uint {
-    --type-color: #06b6d4;
+    --type-color: var(--accent-strong);
 }
 .type-float {
-    --type-color: #10b981;
+    --type-color: var(--live);
 }
 .type-bool {
-    --type-color: #f59e0b;
+    --type-color: var(--warn);
 }
 .type-pointer {
-    --type-color: #a855f7;
+    --type-color: var(--accent-strong);
 }
 .type-string {
-    --type-color: #ec4899;
+    --type-color: var(--accent-soft);
 }
 /* wstring shares the string category (and so .type-string) but gets its own hue via the
    per-id class, which is emitted after the category class and wins on source order. */
 .type-wstring {
-    --type-color: #f43f5e;
+    --type-color: var(--danger);
 }
 .type-bits {
-    --type-color: #64748b; /* slate - a quiet, register-dump hue for the bitfield types */
+    --type-color: var(--ink-3); /* quiet neutral for the bitfield types */
 }
 
 .type-badge {
@@ -415,7 +528,9 @@
     width: 144px;
     padding: 6px;
     box-sizing: border-box;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    background: var(--bg-deep);
+    box-shadow: var(--pop-shadow);
+    animation: pop-in 0.12s ease-out;
 }
 .type-picker-pop .type-options {
     display: flex;
@@ -477,6 +592,9 @@
     flex-direction: column;
     gap: 2px;
     overflow: visible; /* override .panel's clip so the fly-out submenus aren't cut off */
+    background: var(--bg-deep);
+    box-shadow: var(--pop-shadow);
+    animation: pop-in 0.12s ease-out;
 }
 
 /* Items are <button> (leaf actions) and <div> (submenu parents); the shared class keeps them
@@ -511,8 +629,8 @@
     border-color: transparent;
 }
 .node-menu-item.danger:hover {
-    color: crimson;
-    border-color: crimson;
+    color: var(--danger);
+    border-color: var(--danger);
 }
 .node-menu-sep {
     height: 1px;
@@ -542,10 +660,10 @@
     width: 168px;
     padding: 6px;
     box-sizing: border-box;
-    background: var(--bg);
+    background: var(--bg-deep);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    border-radius: var(--radius);
+    box-shadow: var(--pop-shadow);
 }
 .node-menu-item.has-submenu:hover > .node-submenu {
     display: flex;
@@ -690,4 +808,348 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+}
+
+/* Live-inspection toolbar (status / pause / baseline / previews + search / filters / analysis) */
+
+.mem-toolbar {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+}
+.mem-toolbar-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+}
+.mtb-sep {
+    width: 1px;
+    height: 18px;
+    background: var(--border);
+    margin: 0 4px;
+}
+.mtb-btn {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--text-h);
+    background: var(--social-bg);
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 5px 9px;
+    transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+.mtb-btn:hover:not(:disabled) {
+    border-color: var(--accent-border);
+}
+.mtb-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+.mtb-btn.toggle.on {
+    color: var(--accent);
+    background: var(--accent-bg);
+    border-color: var(--accent-border);
+}
+.mtb-btn:focus-visible,
+.mtb-select:focus-visible,
+.mtb-search:focus-visible,
+.mtb-goto:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+.mtb-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.mtb-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+}
+.mtb-select {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-h);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 4px 6px;
+    cursor: pointer;
+}
+.mtb-search,
+.mtb-goto {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-h);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 5px 8px;
+}
+.mtb-search {
+    flex: 1 1 180px;
+    min-width: 120px;
+}
+.mtb-goto {
+    width: 92px;
+}
+.mtb-search:focus,
+.mtb-goto:focus {
+    outline: none;
+    border-color: var(--accent-border);
+}
+.mtb-note {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+    white-space: nowrap;
+}
+.mtb-note.warn {
+    color: var(--warn);
+}
+.mtb-note.accent {
+    color: var(--accent);
+}
+
+/* Poll status badge */
+.mem-status {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    min-width: 52px;
+    justify-content: center;
+}
+.mem-status-live {
+    color: var(--live);
+    background: var(--live-bg);
+    border-color: var(--live-line);
+}
+.mem-status-paused {
+    color: var(--warn);
+    background: var(--warn-bg);
+    border-color: var(--warn);
+}
+.mem-status-reading {
+    color: var(--accent);
+    background: var(--accent-bg);
+    border-color: var(--accent-border);
+}
+.mem-status-error {
+    color: var(--danger);
+    background: var(--danger-bg);
+    border-color: var(--danger-line);
+}
+
+/* Keyboard focus + baseline markers on rows */
+.node-grid .list:focus {
+    outline: none;
+}
+.node-grid .list:focus-visible {
+    outline: 2px solid var(--accent-border);
+    outline-offset: -2px;
+}
+.node-row.focused {
+    box-shadow: inset 0 0 0 1px var(--accent-border);
+}
+.node-row.selected.focused {
+    box-shadow: inset 2px 0 0 var(--accent), inset 0 0 0 1px var(--accent-border);
+}
+.node-row.baseline-changed .col-offset {
+    color: var(--warn);
+}
+.baseline-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--warn);
+    margin-right: 5px;
+    vertical-align: middle;
+}
+.lock-tag {
+    font-size: 10px;
+    margin-right: 4px;
+    opacity: 0.8;
+}
+
+/* Inline typed value editor */
+.value-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.value-edit-input {
+    flex: 1 1 auto;
+    min-width: 60px;
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 13px;
+    box-sizing: border-box;
+    border: 1px solid var(--accent-border);
+    border-radius: 3px;
+    background: var(--bg);
+    color: var(--text-h);
+    padding: 0 4px;
+}
+.value-edit-input:focus {
+    outline: none;
+}
+.value-edit-input.invalid {
+    border-color: var(--danger);
+}
+.value-edit-input.pending {
+    opacity: 0.6;
+}
+.value-edit-state {
+    flex: 0 1 auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+.value-edit-state.pending {
+    color: var(--accent);
+}
+.value-edit-state.error {
+    color: var(--danger);
+}
+
+/* Analysis suggestion chip in the type column */
+.col-type {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.suggestion-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1;
+    padding: 2px 5px;
+    border-radius: 5px;
+    border: 1px dashed var(--accent-border);
+    color: var(--accent);
+    background: var(--accent-bg);
+    white-space: nowrap;
+}
+.suggestion-chip.conf-medium {
+    border-color: var(--warn);
+    color: var(--warn);
+    background: var(--warn-bg);
+}
+.suggestion-chip.conf-low {
+    border-color: var(--border);
+    color: var(--text);
+    background: transparent;
+}
+.suggestion-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90px;
+}
+.suggestion-act {
+    font: inherit;
+    font-size: 10px;
+    line-height: 1;
+    cursor: pointer;
+    color: inherit;
+    background: transparent;
+    border: none;
+    padding: 1px 2px;
+    border-radius: 3px;
+}
+.suggestion-act:hover {
+    background: color-mix(in srgb, currentColor 18%, transparent);
+}
+.node-row.suggested .type-badge {
+    opacity: 0.85;
+}
+
+/* Registry-ref rows in the type picker (structs/enums sections) */
+.type-section-head {
+    font-family: var(--heading);
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text);
+    padding: 6px 4px 2px;
+}
+.type-ref {
+    --type-color: var(--accent-soft);
+}
+.type-enumref {
+    --type-color: var(--warn);
+}
+.type-structref {
+    --type-color: var(--accent-strong);
+}
+
+/* Inline struct expansion (fields of a referenced struct under the row) */
+.struct-expand {
+    padding: 2px 0 4px 0;
+    margin-left: 24px;
+    border-left: 2px solid var(--accent-border);
+    background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+.struct-field-value {
+    color: var(--text);
+}
+
+/* Bit-names editor window body */
+.bitnames-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    height: 100%;
+    box-sizing: border-box;
+}
+.bitnames-hint {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text);
+}
+.bitnames-text {
+    flex: 1 1 auto;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-h);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 6px 8px;
+    resize: none;
+}
+.bitnames-text:focus {
+    outline: none;
+    border-color: var(--accent-border);
+}
+
+/* Active option marker in the display-format / endianness submenus */
+.node-submenu-item.active {
+    color: var(--accent);
+    border-color: var(--accent-border);
 }

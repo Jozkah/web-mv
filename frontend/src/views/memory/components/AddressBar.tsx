@@ -16,7 +16,7 @@ function normalize(text: string): string | undefined {
     return value === undefined ? undefined : toHex(value);
 }
 
-export function AddressBar() {
+export function AddressBar(props: { inputRef?: (el: HTMLInputElement) => void }) {
     const memory = useMemory();
     const sigMaker = useSigMaker();
     const [text, setText] = createSignal(memory.activeClass()?.address ?? "");
@@ -49,6 +49,7 @@ export function AddressBar() {
                     type="text"
                     spellcheck={false}
                     placeholder="0x0000000000000000"
+                    ref={(el) => props.inputRef?.(el)}
                     value={text()}
                     onInput={(e) => onInput(e.currentTarget.value)}
                     onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}

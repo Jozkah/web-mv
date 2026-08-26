@@ -1,10 +1,12 @@
-import { isStringType, nodeByteSize } from "../nodes/types";
+import { isRefType, isStringType, nodeByteSize, type Node } from "../nodes/types";
 import type { MemoryClass } from "../state/MemoryContext";
 import { offsets } from "../nodes/layout";
 
 // Convert a MemoryClass definition into a compilable C++ struct header definition.
 // Handles automatic padding naming (pad_0x4[0x8]), primitive C++ types, pointers,
-// fixed char arrays, and static_assert size verification.
+// fixed char arrays, vectors/matrices (float arrays), function pointers, enum/struct
+// references (by name, with a size comment so a missing definition is diagnosable),
+// named bitfields (as a flag comment), and static_assert size verification.
 
 const TYPE_MAP: Record<string, string> = {
     int8: "int8_t",
@@ -19,7 +21,23 @@ const TYPE_MAP: Record<string, string> = {
     double: "double",
     bool: "bool",
     pointer: "uintptr_t",
+    funcptr: "uintptr_t", // call target; cast to the real signature at the use site
+    bits8: "uint8_t",
+    bits16: "uint16_t",
+    bits32: "uint32_t",
+    bits64: "uint64_t",
 };
+
+const FLOAT_COUNTS: Record<string, number> = { vec2: 2, vec3: 3, vec4: 4, mat4: 16 };
+
+function nodeComment(node: Node, hexOff: string): string {
+    const parts = [hexOff];
+    if (node.endian === "be") parts.push("big-endian");
+    if (node.bitNames && node.bitNames.some((b) => b)) {
+        parts.push(`bits: ${node.bitNames.map((b, i) => (b ? `${i}=${b}` : "")).filter(Boolean).join(" ")}`);
+    }
+    return parts.join(" · ");
+}
 
 export function exportClassToCpp(cls: MemoryClass): string {
     const lines: string[] = [];
@@ -45,6 +63,7 @@ export function exportClassToCpp(cls: MemoryClass): string {
         }
 
         const hexOff = `0x${off.toString(16)}`;
+        const name = node.name || `field_${hexOff}`;
 
         if (node.typeId.startsWith("fill")) {
             // Untyped fill tile
@@ -53,12 +72,24 @@ export function exportClassToCpp(cls: MemoryClass): string {
             const isWide = node.typeId === "wstring";
             const charType = isWide ? "wchar_t" : "char";
             const charCount = isWide ? Math.floor(span / 2) : span;
-            const name = node.name || `str_${hexOff}`;
-            lines.push(`    ${charType} ${name}[${charCount}]; // ${hexOff}`);
+            lines.push(`    ${charType} ${node.name || `str_${hexOff}`}[${charCount}]; // ${hexOff}`);
+        } else if (node.typeId in FLOAT_COUNTS) {
+            lines.push(`    float ${name}[${FLOAT_COUNTS[node.typeId]}]; // ${hexOff} (${node.typeId})`);
+        } else if (node.typeId === "union4" || node.typeId === "union8") {
+            const int = node.typeId === "union4" ? "int32_t" : "int64_t";
+            const flt = node.typeId === "union4" ? "float" : "double";
+            lines.push(`    union { ${int} as_int; ${flt} as_float; } ${name}; // ${hexOff}`);
+        } else if (isRefType(node.typeId)) {
+            const ref = node.refName || "Unknown";
+            if (node.typeId === "enumref") {
+                const underlying = span === 1 ? "int8_t" : span === 2 ? "int16_t" : span === 8 ? "int64_t" : "int32_t";
+                lines.push(`    ${underlying} ${name}; // ${hexOff} (enum ${ref})`);
+            } else {
+                lines.push(`    ${ref} ${name}; // ${hexOff} (0x${span.toString(16)} bytes; requires ${ref} definition)`);
+            }
         } else {
             const cppType = TYPE_MAP[node.typeId] || "uint8_t";
-            const name = node.name || `field_${hexOff}`;
-            lines.push(`    ${cppType} ${name}; // ${hexOff}`);
+            lines.push(`    ${cppType} ${name}; // ${nodeComment(node, hexOff)}`);
         }
 
         currentOffset = off + span;

@@ -1,37 +1,46 @@
 import { createContext, createSignal, useContext, type JSX } from "solid-js";
 import { createStore, produce } from "solid-js/store";
-import { fieldLength, fieldType, fieldSize, isFill, isStringType, NODE_TYPES, nodeByteSize, type GuessField, type Node, type NodeTypeId } from "../nodes/types";
-import { addBytes, clearType, createNode, deleteNode, deleteNodes, insertBytes, offsets, padding, renameNode, repeatNodes, setNodeType, setNodeTypeForIds, topIndexOf, totalSize } from "../nodes/layout";
+import { fieldLength, fieldSize, fieldType, isFill, nodeByteSize, type DisplayFormat, type Endian, type GuessField, type Node, type NodeTypeId } from "../nodes/types";
+import { addBytes, clearType, copyNode, createNode, deleteNode, deleteNodes, insertBytes, offsets, padding, renameNode, repeatNodes, setNodeLength, setNodeMeta, setNodeType, setNodeTypeForIds, topIndexOf, totalSize, type SetTypeOptions } from "../nodes/layout";
 import { parseHex, toHex } from "../../../state/address";
-import { load, persistKeyed } from "../../../state/persist";
+import { load, loadRaw, persistKeyed } from "../../../state/persist";
 import { useApp } from "../../../app/AppContext";
+import {
+    buildNodes,
+    MEMORY_STORAGE_VERSION,
+    migrateSavedPayload,
+    sanitizeSavedClass,
+    sanitizeSavedState,
+    serializeNode,
+    type MemoryClass,
+    type SavedState,
+} from "./classSerialization";
 
 // Durable state for the memory viewer: the class definitions, which one is active, and the
 // selected node. This is the structure the user builds; it outlives tab switches. The live
 // byte snapshot is not here - that's transient, owned by the view's poll (useMemorySnapshot).
 
-export interface MemoryClass {
-    id: string;
-    name: string;
-    address: string; // canonical hex, or "" until the user enters one
-    nodes: Node[];
-}
+export type { MemoryClass } from "./classSerialization";
 
 interface MemoryStore {
     classes: MemoryClass[];
     activeId: string | null;
-    // The selected node ids, in no particular order. A plain click selects one; Ctrl+click
-    // toggles. Menu actions apply to the whole set. Cleared on any class switch.
+    // The selected node ids, in selection order. A plain click selects one; Ctrl+click toggles;
+    // Shift+click / Shift+arrows extend a range. Menu actions apply to the whole set. Cleared
+    // on any class switch.
     selectedNodeIds: string[];
     // Which pointer nodes are expanded inline (their target struct rendered beneath them). Keyed
     // by a path string - a top-level pointer uses its node id; a nested one uses "<parentPath>/
     // <childOffset>" - so recursion stays unambiguous and the set survives a reload.
     expandedPaths: string[];
+    // Analysis toggles (feature: controlled automatic analysis), persisted with the classes.
+    autoGuess: boolean;
+    autoGrow: boolean;
 }
 
 // Ceiling for auto-struct inline growth, so a class that always reads live data at its tail
 // can't grow without bound. One chunk of padding is appended each time data reaches the end.
-const AUTO_GROW_MAX = 0x1000;
+export const AUTO_GROW_MAX = 0x1000;
 const AUTO_GROW_CHUNK = 0x40;
 
 let classSeq = 0;
@@ -45,43 +54,20 @@ function newClass(address = "", name?: string): MemoryClass {
 }
 
 // localStorage persistence of the class definitions. Only the durable shape is stored - names,
-// addresses, and each node's type+name; node ids and the live byte snapshot are not. On load the
-// ids are re-minted through createNode/newClass so the runtime seq counters can never collide with
-// a restored id, and the selection (transient UI) resets. activeIndex (not an id) carries which
-// class was active across the re-mint.
+// addresses, and each node's type+name+overrides; node ids and the live byte snapshot are not.
+// On load the ids are re-minted through createNode/newClass so the runtime seq counters can never
+// collide with a restored id, and the selection (transient UI) resets. activeIndex (not an id)
+// carries which class was active across the re-mint.
 // Class definitions are namespaced per attached target (see workspaceKey.ts): the base key is
 // suffixed with the current workspace key so switching targets loads that target's own classes.
+// Schema/versioning/migration live in classSerialization.ts (v2 payloads are accepted on load
+// and re-saved as v3).
 const STORAGE_KEY = "ax.memory";
-// v2 added expandedPaths (inline pointer-expansion state).
-const STORAGE_VERSION = 2;
 
 const storageKeyFor = (wsKey: string) => `${STORAGE_KEY}:${wsKey}`;
 
 // How many mutations the undo stack retains. Bounded so a long session can't grow it without limit.
 const MAX_UNDO = 60;
-
-interface SavedNode {
-    typeId: NodeTypeId;
-    name?: string;
-    length?: number; // byte span of a string field; absent for fixed types
-}
-interface SavedClass {
-    name: string;
-    address: string;
-    nodes: SavedNode[];
-}
-interface SavedState {
-    classes: SavedClass[];
-    activeIndex: number;
-    expandedPaths?: string[];
-}
-
-function serializeNode(n: Node): SavedNode {
-    const s: SavedNode = { typeId: n.typeId };
-    if (n.name !== undefined) s.name = n.name;
-    if (n.length !== undefined) s.length = n.length;
-    return s;
-}
 
 function serialize(store: MemoryStore): SavedState {
     return {
@@ -92,51 +78,57 @@ function serialize(store: MemoryStore): SavedState {
         })),
         activeIndex: store.classes.findIndex((c) => c.id === store.activeId),
         expandedPaths: store.expandedPaths,
+        settings: { autoGuess: store.autoGuess, autoGrow: store.autoGrow },
     };
 }
 
 function makeDefault(): MemoryStore {
     const first = newClass();
-    return { classes: [first], activeId: first.id, selectedNodeIds: [], expandedPaths: [] };
+    return {
+        classes: [first],
+        activeId: first.id,
+        selectedNodeIds: [],
+        expandedPaths: [],
+        autoGuess: true,
+        autoGrow: true,
+    };
 }
 
-// Rebuild the store from a saved payload (from localStorage OR an undo snapshot), or undefined to
-// fall back to a fresh default. Any structurally bad class (or an unknown node type from a drifted
-// schema) discards the whole payload rather than hydrating a partial, broken set of classes.
+// Rebuild the store from a validated payload (from localStorage OR an undo snapshot), or
+// undefined to fall back to a fresh default. Validation is all-or-nothing (see
+// sanitizeSavedState): a structurally bad class discards the whole payload rather than
+// hydrating a partial, broken set of classes.
 function buildFromSaved(payload: unknown): MemoryStore | undefined {
-    const saved = payload as SavedState | null;
-    if (!saved || !Array.isArray(saved.classes) || saved.classes.length === 0) return undefined;
+    const saved = sanitizeSavedState(payload);
+    if (!saved) return undefined;
 
-    const classes: MemoryClass[] = [];
-    for (const c of saved.classes) {
-        if (!c || typeof c.name !== "string" || typeof c.address !== "string" || !Array.isArray(c.nodes)) return undefined;
-        const nodes: Node[] = [];
-        for (const n of c.nodes) {
-            if (!n || !(n.typeId in NODE_TYPES)) return undefined;
-            // A string field must carry a numeric byte span; a malformed one discards the payload.
-            if (isStringType(n.typeId) && typeof n.length !== "number") return undefined;
-            const length = isStringType(n.typeId) ? (n.length as number) : undefined;
-            nodes.push(createNode(n.typeId, typeof n.name === "string" ? n.name : undefined, length));
-        }
+    const classes: MemoryClass[] = saved.classes.map((c) => {
         classSeq++;
-        classes.push({ id: `c${classSeq}`, name: c.name, address: c.address, nodes });
-    }
+        return { id: `c${classSeq}`, name: c.name, address: c.address, nodes: buildNodes(c) };
+    });
 
-    const activeIndex =
-        Number.isInteger(saved.activeIndex) && saved.activeIndex >= 0 && saved.activeIndex < classes.length
-            ? saved.activeIndex
-            : 0;
-    const expandedPaths = Array.isArray(saved.expandedPaths)
-        ? saved.expandedPaths.filter((p): p is string => typeof p === "string")
-        : [];
-    return { classes, activeId: classes[activeIndex].id, selectedNodeIds: [], expandedPaths };
+    return {
+        classes,
+        activeId: classes[saved.activeIndex].id,
+        selectedNodeIds: [],
+        expandedPaths: saved.expandedPaths ?? [],
+        autoGuess: saved.settings?.autoGuess ?? true,
+        autoGrow: saved.settings?.autoGrow ?? true,
+    };
+}
+
+/** Load a workspace's saved classes, accepting the current schema or migrating the legacy one. */
+function loadForKey(key: string): MemoryStore | undefined {
+    const current = load<SavedState>(key, MEMORY_STORAGE_VERSION);
+    if (current) return buildFromSaved(current);
+    const migrated = migrateSavedPayload(loadRaw(key));
+    return migrated ? buildFromSaved(migrated) : undefined;
 }
 
 function createMemoryState() {
     const app = useApp();
 
-    const initial: MemoryStore =
-        buildFromSaved(load<SavedState>(storageKeyFor(app.workspaceKey()), STORAGE_VERSION)) ?? makeDefault();
+    const initial: MemoryStore = loadForKey(storageKeyFor(app.workspaceKey())) ?? makeDefault();
     const [store, setStore] = createStore<MemoryStore>(initial);
 
     // Swap the whole class set (target switch, or an undo/redo restore) in one produce; selection
@@ -147,12 +139,15 @@ function createMemoryState() {
                 s.classes = next.classes;
                 s.activeId = next.activeId;
                 s.selectedNodeIds = [];
+                s.autoGuess = next.autoGuess;
+                s.autoGrow = next.autoGrow;
             }),
         );
     };
 
     // Undo/redo. Snapshots are the same serialized shape we persist, so any durable change - rename,
-    // retype, insert/delete, add/remove class - is captured generically. Selection changes are not.
+    // retype, insert/delete, add/remove class - is captured generically. Selection changes are not,
+    // and neither are live process-memory writes (they alter the target, not the layout).
     const undoStack: SavedState[] = [];
     const redoStack: SavedState[] = [];
     const [undoDepth, setUndoDepth] = createSignal(0);
@@ -177,13 +172,15 @@ function createMemoryState() {
     const restore = (saved: SavedState) => replaceStore(buildFromSaved(saved) ?? makeDefault());
 
     // Namespaced persistence: follows the attached target. On a target switch, reload that target's
-    // classes and drop the (now-foreign) undo history.
+    // classes (migrating a legacy payload if that's what's stored) and drop the (now-foreign) undo
+    // history.
     persistKeyed(
         () => storageKeyFor(app.workspaceKey()),
-        STORAGE_VERSION,
+        MEMORY_STORAGE_VERSION,
         () => serialize(store),
-        (loaded) => {
-            replaceStore(buildFromSaved(loaded) ?? makeDefault());
+        (loaded, key) => {
+            const next = (loaded ? buildFromSaved(loaded) : undefined) ?? loadForKey(key) ?? makeDefault();
+            replaceStore(next);
             clearHistory();
         },
     );
@@ -218,9 +215,26 @@ function createMemoryState() {
         },
         activeClass,
 
+        // Analysis toggles (persisted with the class/session state; see MemoryView for how they
+        // gate automatic guessing/growth).
+        get autoGuess() {
+            return store.autoGuess;
+        },
+        get autoGrow() {
+            return store.autoGrow;
+        },
+        setAutoGuess(on: boolean) {
+            setStore("autoGuess", on);
+        },
+        setAutoGrow(on: boolean) {
+            setStore("autoGrow", on);
+        },
+
         // Serialize all class definitions to JSON (the same shape as the persisted state) for the
         // struct round-trip and session save. Import appends any structurally valid classes and
-        // returns how many were added; a bad node type or malformed string field skips that class.
+        // returns how many were added; a bad node type or malformed string/ref field skips that
+        // class (references to structs/enums that don't exist locally are kept - they render as
+        // "missing" rather than being dropped).
         exportJson(): string {
             return JSON.stringify(serialize(store), null, 2);
         },
@@ -231,17 +245,10 @@ function createMemoryState() {
             setStore(
                 produce((s) => {
                     for (const c of data.classes) {
-                        if (!c || typeof c.name !== "string" || typeof c.address !== "string" || !Array.isArray(c.nodes)) continue;
-                        const nodes: Node[] = [];
-                        let ok = true;
-                        for (const n of c.nodes) {
-                            if (!n || !(n.typeId in NODE_TYPES)) { ok = false; break; }
-                            if (isStringType(n.typeId) && typeof n.length !== "number") { ok = false; break; }
-                            nodes.push(createNode(n.typeId, typeof n.name === "string" ? n.name : undefined, isStringType(n.typeId) ? n.length : undefined));
-                        }
-                        if (!ok) continue;
+                        const clean = sanitizeSavedClass(c);
+                        if (!clean) continue;
                         classSeq++;
-                        s.classes.push({ id: `c${classSeq}`, name: c.name, address: c.address, nodes });
+                        s.classes.push({ id: `c${classSeq}`, name: clean.name, address: clean.address, nodes: buildNodes(clean) });
                         added++;
                     }
                     if (added > 0 && s.activeId === null) s.activeId = s.classes[0]?.id ?? null;
@@ -317,7 +324,8 @@ function createMemoryState() {
         },
 
         // Selection. A plain click replaces the selection with one node; Ctrl+click toggles a
-        // node in or out. isSelected drives the row highlight.
+        // node in or out; setSelection replaces the whole set (range selection / select-all).
+        // isSelected drives the row highlight.
         selectNode(nodeId: string) {
             setStore("selectedNodeIds", [nodeId]);
         },
@@ -325,6 +333,9 @@ function createMemoryState() {
             setStore("selectedNodeIds", (ids) =>
                 ids.includes(nodeId) ? ids.filter((id) => id !== nodeId) : [...ids, nodeId],
             );
+        },
+        setSelection(nodeIds: string[]) {
+            setStore("selectedNodeIds", nodeIds);
         },
         clearSelection() {
             setStore("selectedNodeIds", []);
@@ -347,36 +358,64 @@ function createMemoryState() {
         // Auto-struct inline growth: when live data has reached the class's tail (its last node is
         // a typed field, not untyped padding), append a chunk of padding so the struct can keep
         // growing as more fields are discovered - the in-place analogue of following a pointer into
-        // a fresh class. Capped so a class over live data can't grow without bound. Returns true
-        // when it grew, so the caller can throttle.
+        // a fresh class. Capped at AUTO_GROW_MAX so a class over live data can't grow without
+        // bound; the Auto Grow toggle and pause/detach gating live in the caller (MemoryView).
+        // Returns true when it grew, so the caller can throttle.
         autoGrowActiveClass(): boolean {
             const cls = activeClass();
             if (!cls || cls.nodes.length === 0) return false;
             const last = cls.nodes[cls.nodes.length - 1];
             if (isFill(last.typeId)) return false; // tail is still padding - room remains
+            if (last.locked) return false; // a locked tail field opts the class out of growth
             if (totalSize(cls.nodes) >= AUTO_GROW_MAX) return false;
             updateNodes((nodes) => addBytes(nodes, AUTO_GROW_CHUNK));
             return true;
         },
-        setNodeType(index: number, typeId: NodeTypeId) {
+        setNodeType(index: number, typeId: NodeTypeId, opts?: SetTypeOptions) {
             pushUndo();
-            updateNodes((nodes) => setNodeType(nodes, index, typeId));
+            updateNodes((nodes) => setNodeType(nodes, index, typeId, opts));
         },
         clearNodeType(index: number) {
             pushUndo();
             updateNodes((nodes) => clearType(nodes, index));
         },
+        /** Resize a string/ref field's byte span (user-configurable string length). */
+        setNodeLength(index: number, length: number) {
+            pushUndo();
+            updateNodes((nodes) => setNodeLength(nodes, index, length));
+        },
+        /** Per-node display/endian/bit-name/lock overrides (no layout change). */
+        setNodeMeta(index: number, patch: { displayFormat?: DisplayFormat; endian?: Endian; bitNames?: string[]; locked?: boolean }) {
+            pushUndo();
+            updateNodes((nodes) => setNodeMeta(nodes, index, patch));
+        },
+        /** Lock/unlock every selected node against automatic analysis. */
+        setSelectedLocked(locked: boolean) {
+            const ids = new Set(store.selectedNodeIds);
+            if (ids.size === 0) return;
+            pushUndo();
+            updateNodes((nodes) =>
+                nodes.map((n) => {
+                    if (!ids.has(n.id)) return n;
+                    const next = { ...n };
+                    if (locked) next.locked = true;
+                    else delete next.locked;
+                    return next;
+                }),
+            );
+        },
         // Apply auto-guess results: replace each planned tile with its guessed field(s). A guess
-        // is only honored when the tile is STILL an untyped fill of the planned byte span - a
-        // guess can land a tick after the user has typed or resized that node by hand, and their
-        // choice must win. Each replacement spans the same byte count, so later offsets never move.
+        // is only honored when the tile is STILL an untyped, unlocked fill of the planned byte
+        // span - a guess can land a tick after the user has typed, locked, or resized that node
+        // by hand, and their choice must win. Each replacement spans the same byte count, so
+        // later offsets never move.
         applyGuesses(plan: Map<string, GuessField[]>) {
             if (plan.size === 0) return;
             pushUndo();
             updateNodes((nodes) =>
                 nodes.flatMap((n) => {
                     const fields = plan.get(n.id);
-                    if (!fields || fields.length === 0 || !isFill(n.typeId)) return [n];
+                    if (!fields || fields.length === 0 || !isFill(n.typeId) || n.locked) return [n];
                     const span = fields.reduce((sum, f) => sum + fieldSize(f), 0);
                     if (span !== nodeByteSize(n)) return [n];
                     return fields.map((f, k) => createNode(fieldType(f), k === 0 ? n.name : undefined, fieldLength(f)));
@@ -403,16 +442,17 @@ function createMemoryState() {
         // Multi-select menu actions, applied to the whole selection in the active class.
 
         // Retype every selected node.
-        setSelectedType(typeId: NodeTypeId) {
+        setSelectedType(typeId: NodeTypeId, opts?: SetTypeOptions) {
             const ids = store.selectedNodeIds;
             if (ids.length === 0) return;
             pushUndo();
-            updateNodes((nodes) => setNodeTypeForIds(nodes, ids, typeId));
+            updateNodes((nodes) => setNodeTypeForIds(nodes, ids, typeId, opts));
         },
         // Repeat the selected nodes `times` more times (array-of-struct). No-op if nothing selected.
         repeatSelection(times: number) {
             const ids = new Set(store.selectedNodeIds);
             if (ids.size === 0) return;
+            pushUndo();
             updateNodes((nodes) => repeatNodes(nodes, ids, times));
         },
         // Insert padding above the topmost selected node (ReClass "Insert"). No-op if nothing
@@ -448,7 +488,7 @@ function createMemoryState() {
             cls.nodes.forEach((n, i) => {
                 if (!ids.has(n.id)) return;
                 if (topOff < 0) topOff = offs[i];
-                picked.push(createNode(n.typeId, n.name, n.length));
+                picked.push(copyNode(n));
             });
             if (picked.length === 0) return;
             pushUndo();
@@ -463,7 +503,8 @@ function createMemoryState() {
         },
 
         // General undo/redo over durable class state (renames, retypes, insert/delete, add/remove
-        // class). Selection is transient and never enters the stack. Bounded at MAX_UNDO.
+        // class). Selection is transient and never enters the stack; process-memory writes are
+        // NOT layout mutations and never touch it either. Bounded at MAX_UNDO.
         undo() {
             if (undoStack.length === 0) return;
             redoStack.push(serialize(store));

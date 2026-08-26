@@ -28,16 +28,26 @@ function fieldName(ctx: CopyContext): string {
     return ctx.node.name ?? `field_${ctx.offset.toString(16)}`;
 }
 
-/** A C-ish member declaration for the field, arrays spelled out for strings ("char name[16]"). */
+const FLOAT_COUNTS: Record<string, number> = { vec2: 2, vec3: 3, vec4: 4, mat4: 16 };
+
+/** A C-ish member declaration for the field, arrays spelled out for strings ("char name[16]")
+ *  and float vectors/matrices; registry refs use their referenced type name. */
 function memberDecl(ctx: CopyContext): string {
-    const label = nodeType(ctx.node.typeId).label;
+    const id = ctx.node.typeId;
+    const label = nodeType(id).label;
     const name = fieldName(ctx);
-    if (isStringType(ctx.node.typeId)) {
-        const elem = ctx.node.typeId === "wstring" ? "wchar_t" : "char";
-        const count = ctx.node.typeId === "wstring" ? ctx.byteSize >> 1 : ctx.byteSize;
-        return `${elem} ${name}[${count}]; //0x${ctx.offset.toString(16).padStart(4, "0")} (${label})`;
+    const at = `//0x${ctx.offset.toString(16).padStart(4, "0")}`;
+    if (isStringType(id)) {
+        const elem = id === "wstring" ? "wchar_t" : "char";
+        const count = id === "wstring" ? ctx.byteSize >> 1 : ctx.byteSize;
+        return `${elem} ${name}[${count}]; ${at} (${label})`;
     }
-    return `${label} ${name}; //0x${ctx.offset.toString(16).padStart(4, "0")}`;
+    if (id in FLOAT_COUNTS) return `float ${name}[${FLOAT_COUNTS[id]}]; ${at} (${label})`;
+    if (id === "enumref" || id === "structref") {
+        return `${ctx.node.refName ?? "Unknown"} ${name}; ${at} (${label}, 0x${ctx.byteSize.toString(16)} bytes)`;
+    }
+    if (id === "funcptr") return `uintptr_t ${name}; ${at} (fn ptr)`;
+    return `${label} ${name}; ${at}`;
 }
 
 /** Build the clipboard text for one format, or undefined when the data it needs isn't available

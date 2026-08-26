@@ -1,5 +1,5 @@
 import { offsets } from "./layout";
-import { isFill, nodeSize, type GuessField, type Node, type NodeTypeId } from "./types";
+import { isFill, nodeSize, type GuessField, type Node } from "./types";
 
 // ReClass-style type guessing. We classify every untyped tile from the live bytes with a set
 // of strict-but-opinionated rules: confident where we can verify (a pointer is committed only
@@ -8,6 +8,11 @@ import { isFill, nodeSize, type GuessField, type Node, type NodeTypeId } from ".
 // leaving a field blank, so we accept the occasional miss on purpose. Guesses only ever
 // upgrade untyped tiles, never a hand-typed field, and always re-tile the exact same byte
 // span so no later offset shifts.
+//
+// Every guess carries a confidence tier + a short reason. The automatic path applies only
+// "high" (verified pointers, terminated strings); "medium"/"low" become reviewable
+// suggestions. The classification rules themselves are unchanged from the original guesser -
+// confidence is layered on top, never loosening the pointer follow-check.
 
 // x64 canonical user-mode addresses: above the 64K null region, below the 0x7FFF... ceiling.
 export const USERMODE_MIN = 0x10000n;
@@ -15,6 +20,15 @@ export const USERMODE_MAX = 0x7fffffffffffn;
 
 export function isUsermodePointer(value: bigint): boolean {
     return value >= USERMODE_MIN && value <= USERMODE_MAX;
+}
+
+export type Confidence = "high" | "medium" | "low";
+
+/** One classified tile: the replacement fields plus how sure we are and why. */
+export interface TypedGuess {
+    types: GuessField[];
+    confidence: Confidence;
+    reason: string;
 }
 
 // Magnitude bands where real game data lives. A reinterpreted small integer lands far outside
@@ -59,45 +73,67 @@ function looksLikeDouble(hi: number, lo: number, value: number): boolean {
 // (-1, -100, a negative handle) than as a huge unsigned one; above it we call it unsigned.
 const SMALL_NEGATIVE = -0x1000000; // -16M
 
-function guessDword(view: DataView, o: number): NodeTypeId {
+function classifyDword(view: DataView, o: number): TypedGuess {
     const bits = view.getUint32(o, true);
-    if (looksLikeFloat(bits, view.getFloat32(o, true))) return "float";
-    if (bits <= 0x7fffffff) return "int32";
-    return view.getInt32(o, true) >= SMALL_NEGATIVE ? "int32" : "uint32";
+    const f = view.getFloat32(o, true);
+    if (looksLikeFloat(bits, f)) {
+        return { types: ["float"], confidence: "medium", reason: `decodes to a plausible float (${f.toPrecision(4)})` };
+    }
+    if (bits <= 0x7fffffff) {
+        return { types: ["int32"], confidence: "low", reason: "default integer interpretation" };
+    }
+    return view.getInt32(o, true) >= SMALL_NEGATIVE
+        ? { types: ["int32"], confidence: "low", reason: "small negative value reads as signed" }
+        : { types: ["uint32"], confidence: "low", reason: "large high-bit value reads as unsigned" };
 }
 
-function guessWord(view: DataView, o: number): NodeTypeId {
-    if (view.getUint16(o, true) <= 0x7fff) return "int16";
-    return view.getInt16(o, true) >= -0x1000 ? "int16" : "uint16";
+function classifyWord(view: DataView, o: number): TypedGuess {
+    if (view.getUint16(o, true) <= 0x7fff) {
+        return { types: ["int16"], confidence: "low", reason: "default integer interpretation" };
+    }
+    return view.getInt16(o, true) >= -0x1000
+        ? { types: ["int16"], confidence: "low", reason: "small negative value reads as signed" }
+        : { types: ["uint16"], confidence: "low", reason: "large high-bit value reads as unsigned" };
 }
 
-function guessByte(view: DataView, o: number): NodeTypeId {
+function classifyByte(view: DataView, o: number): TypedGuess {
     const u = view.getUint8(o);
-    if (u === 0 || u === 1) return "bool";
-    return u <= 0x7f ? "int8" : "uint8";
+    if (u === 0 || u === 1) {
+        return { types: ["bool"], confidence: "medium", reason: `byte is ${u} (bool-like)` };
+    }
+    return u <= 0x7f
+        ? { types: ["int8"], confidence: "low", reason: "default integer interpretation" }
+        : { types: ["uint8"], confidence: "low", reason: "high-bit byte reads as unsigned" };
 }
 
 // An 8-byte slot that is neither a pointer nor a string. All-zero is ambiguous padding (left
 // untyped). A genuine double or a small 64-bit signed integer is kept whole; otherwise we read
 // it as two dwords so a float/int pair (vec2-ish data) is captured rather than swallowed into
 // one 64-bit field we'd usually guess wrong.
-function guessQword(view: DataView, o: number): NodeTypeId[] {
-    if (view.getBigUint64(o, true) === 0n) return [];
+function classifyQword(view: DataView, o: number): TypedGuess {
+    if (view.getBigUint64(o, true) === 0n) {
+        return { types: [], confidence: "low", reason: "all zero - ambiguous" };
+    }
 
     const lo = view.getUint32(o, true);
     const hi = view.getUint32(o + 4, true);
 
     // All-ones high word with the low word's sign bit set reads as a small negative int64
     // (e.g. -1), not two unrelated dwords.
-    if (hi === 0xffffffff && (lo & 0x80000000) !== 0) return ["int64"];
+    if (hi === 0xffffffff && (lo & 0x80000000) !== 0) {
+        return { types: ["int64"], confidence: "medium", reason: "sign-extended small negative int64" };
+    }
 
     const loIsFloat = looksLikeFloat(lo, view.getFloat32(o, true));
     const hiIsFloat = looksLikeFloat(hi, view.getFloat32(o + 4, true));
     if (!(loIsFloat && hiIsFloat) && looksLikeDouble(hi, lo, view.getFloat64(o, true))) {
-        return ["double"];
+        return { types: ["double"], confidence: "medium", reason: "decodes to a plausible double" };
     }
 
-    return [guessDword(view, o), guessDword(view, o + 4)];
+    const a = classifyDword(view, o);
+    const b = classifyDword(view, o + 4);
+    const confidence: Confidence = a.confidence === "medium" && b.confidence === "medium" ? "medium" : "low";
+    return { types: [...a.types, ...b.types], confidence, reason: `split as two dwords (${a.reason}; ${b.reason})` };
 }
 
 // --- string detection -------------------------------------------------------------------
@@ -177,49 +213,126 @@ export interface GuessPlan {
     types: GuessField[]; // applied when the slot is not a confirmed pointer ([] = leave untyped)
 }
 
-/** Plan a guess for every untyped tile from the live bytes; pointers still need a follow-check. */
+/** Plan a guess for every untyped tile from the live bytes; pointers still need a follow-check.
+ *  Locked tiles are never planned. */
 export function planGuesses(nodes: readonly Node[], view: DataView): GuessPlan[] {
+    return planSuggestions(nodes, view).map((s) => ({
+        nodeId: s.nodeId,
+        pointerTarget: s.pointerTarget,
+        types: s.fields,
+    }));
+}
+
+/** A reviewable classification for one untyped tile. For a pointer candidate, `fields` holds
+ *  the numeric fallback used when the follow-check fails; `finalizeSuggestion` resolves it. */
+export interface Suggestion {
+    nodeId: string;
+    fields: GuessField[];
+    confidence: Confidence;
+    reason: string;
+    pointerTarget?: string;
+}
+
+/** Classify every untyped, unlocked tile. Same rules as the original guesser, but each result
+ *  carries its confidence + reason for review. */
+export function planSuggestions(nodes: readonly Node[], view: DataView): Suggestion[] {
     const offs = offsets(nodes);
     const tag = buildStringTags(view);
-    const out: GuessPlan[] = [];
+    const out: Suggestion[] = [];
 
     nodes.forEach((node, i) => {
         const o = offs[i];
         const size = nodeSize(node.typeId);
-        if (!isFill(node.typeId) || o + size > view.byteLength) return;
+        if (!isFill(node.typeId) || node.locked || o + size > view.byteLength) return;
 
         // Pointer candidates win over everything else - the verified path must not be lost to a
         // stray printable byte - and carry their two-dword numeric fallback for a failed follow.
         if (node.typeId === "fill8") {
             const q = view.getBigUint64(o, true);
             if (isUsermodePointer(q)) {
-                out.push({ nodeId: node.id, pointerTarget: `0x${q.toString(16)}`, types: guessQword(view, o) });
+                const fallback = classifyQword(view, o);
+                out.push({
+                    nodeId: node.id,
+                    pointerTarget: `0x${q.toString(16)}`,
+                    fields: fallback.types,
+                    confidence: fallback.confidence,
+                    reason: fallback.reason,
+                });
                 return;
             }
         }
 
         const str = stringTile(tag, view, o, size);
         if (str === "ascii") {
-            out.push({ nodeId: node.id, types: [{ typeId: "string", length: size }] });
+            out.push({
+                nodeId: node.id,
+                fields: [{ typeId: "string", length: size }],
+                confidence: "high",
+                reason: "NUL-terminated printable ASCII run",
+            });
             return;
         }
         if (str === "utf16") {
-            out.push({ nodeId: node.id, types: [{ typeId: "wstring", length: size }] });
+            out.push({
+                nodeId: node.id,
+                fields: [{ typeId: "wstring", length: size }],
+                confidence: "high",
+                reason: "NUL-terminated UTF-16LE run",
+            });
             return;
         }
 
         if (node.typeId === "fill8") {
-            const types = guessQword(view, o);
-            if (types.length > 0) out.push({ nodeId: node.id, types });
+            const g = classifyQword(view, o);
+            if (g.types.length > 0) {
+                out.push({ nodeId: node.id, fields: g.types, confidence: g.confidence, reason: g.reason });
+            }
             return;
         }
 
-        const types =
-            node.typeId === "fill4" ? [guessDword(view, o)]
-            : node.typeId === "fill2" ? [guessWord(view, o)]
-            : [guessByte(view, o)];
-        out.push({ nodeId: node.id, types });
+        const g =
+            node.typeId === "fill4" ? classifyDword(view, o)
+            : node.typeId === "fill2" ? classifyWord(view, o)
+            : classifyByte(view, o);
+        out.push({ nodeId: node.id, fields: g.types, confidence: g.confidence, reason: g.reason });
     });
 
     return out;
+}
+
+/** Resolve a pointer candidate after its follow-check: confirmed targets become a verified
+ *  (high-confidence) pointer field; failed ones keep their numeric fallback. Non-pointer
+ *  suggestions pass through unchanged. */
+export function finalizeSuggestion(s: Suggestion, pointerConfirmed: boolean): Suggestion {
+    if (!s.pointerTarget) return s;
+    if (pointerConfirmed) {
+        return {
+            nodeId: s.nodeId,
+            fields: ["pointer"],
+            confidence: "high",
+            reason: `user-mode address ${s.pointerTarget}, target readable`,
+        };
+    }
+    return { nodeId: s.nodeId, fields: s.fields, confidence: s.confidence, reason: `${s.reason} (pointer follow-check failed)` };
+}
+
+/** Field-list equality, for accept-time staleness checks (same types and spans, in order). */
+export function sameFields(a: GuessField[], b: GuessField[]): boolean {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+        const x = a[i];
+        const y = b[i];
+        if (typeof x === "string" || typeof y === "string") {
+            if (x !== y) return false;
+        } else if (x.typeId !== y.typeId || x.length !== y.length) {
+            return false;
+        }
+    }
+    return true;
+}
+
+const CONFIDENCE_RANK: Record<Confidence, number> = { high: 2, medium: 1, low: 0 };
+
+export function meetsThreshold(c: Confidence, threshold: Confidence): boolean {
+    return CONFIDENCE_RANK[c] >= CONFIDENCE_RANK[threshold];
 }

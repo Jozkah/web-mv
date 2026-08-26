@@ -1,26 +1,33 @@
-import { For, Show, createEffect, createSignal, on, onCleanup } from "solid-js";
+import { For, Show, createEffect, createSignal, on, onCleanup, untrack, type Accessor } from "solid-js";
 import { useApp } from "../../../app/AppContext";
 import { config } from "../../../config";
 import { parseHex, toHex } from "../../../state/address";
 import { read } from "../../../protocol/requests";
-import { bytePairs, hexToBytes, readString } from "../nodes/format";
+import { bytePairs, hexToBytes } from "../nodes/format";
+import { decodeNode } from "../nodes/decode";
 import { createNode, offsets, padding } from "../nodes/layout";
 import { planGuesses } from "../nodes/guess";
-import { fieldLength, fieldType, isStringType, nodeByteSize, nodeType, type GuessField, type Node } from "../nodes/types";
+import { fieldLength, fieldType, nodeByteSize, nodeType, type GuessField, type Node } from "../nodes/types";
 import { useMemory } from "../state/MemoryContext";
 
 // Inline pointer expansion: read the struct at a pointer's target and render its fields in place,
 // indented beneath the pointer row, with a live refresh and recursive expansion of nested
 // pointers. Self-contained (its own light poll, its own guessed layout) so it doesn't perturb the
 // class definition or the main region poll - following a pointer into a NEW class is still the
-// separate action; this is the peek-in-place variant.
+// separate action; this is the peek-in-place variant. The poll honors the viewer's pause state:
+// while paused, the last-read bytes stay frozen and no new target reads are issued.
 
 // How much to read at the target, and how deep the recursion may go before we stop offering to
 // expand further (bounds live reads and guards against pointer cycles).
 const EXPAND_BYTES = 0x40;
 const MAX_DEPTH = 4;
 
-export function PointerExpansion(props: { address: string; path: string; depth: number }) {
+export function PointerExpansion(props: {
+    address: string;
+    path: string;
+    depth: number;
+    paused: Accessor<boolean>;
+}) {
     const app = useApp();
     const memory = useMemory();
 
@@ -43,7 +50,9 @@ export function PointerExpansion(props: { address: string; path: string; depth: 
 
     // One light poll per expansion, restarted when the target address changes (a parent pointer
     // retargeting). Mirrors the main snapshot loop: at most one read outstanding, next tick only
-    // after the current settles, abandoned on address change / unmount via the token.
+    // after the current settles, abandoned on address change / unmount via `alive`. Pausing stops
+    // the schedule (the nested effect below restarts it on resume); the built layout survives a
+    // pause so nothing jumps when polling resumes.
     createEffect(
         on(
             () => props.address,
@@ -52,9 +61,12 @@ export function PointerExpansion(props: { address: string; path: string; depth: 
                 setNodes([]);
                 let alive = true;
                 let timer: ReturnType<typeof setTimeout> | undefined;
+                let inFlight = false;
                 let built = false;
 
                 const tick = () => {
+                    if (!alive || inFlight || untrack(props.paused)) return;
+                    inFlight = true;
                     read(app.client, { address, size: EXPAND_BYTES })
                         .then((res) => {
                             if (!alive || !res.success) return;
@@ -68,10 +80,22 @@ export function PointerExpansion(props: { address: string; path: string; depth: 
                         })
                         .catch(() => {})
                         .finally(() => {
-                            if (alive) timer = setTimeout(tick, config.memoryPollIntervalMs);
+                            inFlight = false;
+                            if (alive && !untrack(props.paused)) {
+                                timer = setTimeout(tick, config.memoryPollIntervalMs);
+                            }
                         });
                 };
-                tick();
+
+                // Nested effect (owned by this computation): stop the timer on pause, kick the
+                // loop again on resume. First run starts the initial read when not paused.
+                createEffect(() => {
+                    if (props.paused()) {
+                        clearTimeout(timer);
+                    } else {
+                        tick();
+                    }
+                });
 
                 onCleanup(() => {
                     alive = false;
@@ -85,7 +109,14 @@ export function PointerExpansion(props: { address: string; path: string; depth: 
 
     return (
         <div class="ptr-expand">
-            <Show when={view()} fallback={<div class="ptr-expand-status">reading {props.address}…</div>}>
+            <Show
+                when={view()}
+                fallback={
+                    <div class="ptr-expand-status">
+                        {props.paused() ? `paused — ${props.address} not read` : `reading ${props.address}…`}
+                    </div>
+                }
+            >
                 {(v) => (
                     <For each={nodes()}>
                         {(node, i) => {
@@ -93,12 +124,7 @@ export function PointerExpansion(props: { address: string; path: string; depth: 
                             const size = () => nodeByteSize(node);
                             const inBounds = () => offset() + size() <= v().byteLength;
                             const address = () => toHex(parseHex(props.address) + BigInt(offset()));
-                            const value = () => {
-                                if (!inBounds()) return undefined;
-                                return isStringType(node.typeId)
-                                    ? readString(v(), offset(), size(), node.typeId === "wstring")
-                                    : nodeType(node.typeId).decode(v(), offset());
-                            };
+                            const value = () => (inBounds() ? decodeNode(v(), offset(), node) : undefined);
                             const target = () =>
                                 node.typeId === "pointer" && inBounds()
                                     ? `0x${v().getBigUint64(offset(), true).toString(16)}`
@@ -137,6 +163,7 @@ export function PointerExpansion(props: { address: string; path: string; depth: 
                                             address={target() ?? "0x0"}
                                             path={childPath()}
                                             depth={props.depth + 1}
+                                            paused={props.paused}
                                         />
                                     </Show>
                                 </>
