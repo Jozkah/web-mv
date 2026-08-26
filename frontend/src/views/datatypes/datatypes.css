@@ -26,31 +26,31 @@
 }
 
 .dt-tab-btn {
-    background: var(--bg-panel-head, #1e1e28);
-    color: var(--fg-muted, #9a9aab);
-    border: 1px solid var(--border-color, #2a2a36);
+    background: var(--bg-panel-head, var(--surface-3));
+    color: var(--fg-muted, var(--ink-2));
+    border: 1px solid var(--border-color, var(--line-strong));
     border-radius: 6px;
     padding: 6px 14px;
     cursor: pointer;
 }
 
 .dt-tab-btn.active {
-    background: var(--accent, #4f7cff);
+    background: var(--accent, var(--accent));
     color: #fff;
-    border-color: var(--accent, #4f7cff);
+    border-color: var(--accent, var(--accent));
 }
 
 .dt-btn {
-    background: var(--bg-panel-head, #1e1e28);
-    color: var(--fg-main, #e1e1e8);
-    border: 1px solid var(--border-color, #2a2a36);
+    background: var(--bg-panel-head, var(--surface-3));
+    color: var(--fg-main, var(--ink));
+    border: 1px solid var(--border-color, var(--line-strong));
     border-radius: 6px;
     padding: 6px 12px;
     cursor: pointer;
 }
 
 .dt-btn:hover {
-    border-color: var(--accent, #4f7cff);
+    border-color: var(--accent, var(--accent));
 }
 
 .dt-btn-sm {
@@ -59,7 +59,7 @@
 }
 
 .dt-import-error {
-    color: #ff6b6b;
+    color: var(--danger);
     font-size: 13px;
     padding: 4px 2px;
 }
@@ -74,8 +74,8 @@
 }
 
 .dt-card {
-    background: var(--bg-panel, #18181f);
-    border: 1px solid var(--border-color, #2a2a36);
+    background: var(--bg-panel, var(--surface-2));
+    border: 1px solid var(--border-color, var(--line-strong));
     border-radius: 8px;
     padding: 10px 12px;
     display: flex;
@@ -91,9 +91,9 @@
 
 .dt-name-input {
     flex: 1 1 auto;
-    background: var(--bg-input, #121218);
-    color: var(--fg-main, #e1e1e8);
-    border: 1px solid var(--border-color, #2a2a36);
+    background: var(--bg-input, var(--surface-1));
+    color: var(--fg-main, var(--ink));
+    border: 1px solid var(--border-color, var(--line-strong));
     border-radius: 6px;
     padding: 5px 10px;
     font-weight: 600;
@@ -101,15 +101,15 @@
 
 .dt-size-tag {
     font-size: 12px;
-    color: var(--fg-muted, #9a9aab);
+    color: var(--fg-muted, var(--ink-2));
     font-family: monospace;
     white-space: nowrap;
 }
 
 .dt-underlying {
-    background: var(--bg-input, #121218);
-    color: var(--fg-main, #e1e1e8);
-    border: 1px solid var(--border-color, #2a2a36);
+    background: var(--bg-input, var(--surface-1));
+    color: var(--fg-main, var(--ink));
+    border: 1px solid var(--border-color, var(--line-strong));
     border-radius: 6px;
     padding: 4px 6px;
 }
@@ -121,7 +121,7 @@
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--fg-muted, #9a9aab);
+    color: var(--fg-muted, var(--ink-2));
     padding: 0 2px;
 }
 
@@ -135,15 +135,15 @@
 .dt-offset {
     font-family: monospace;
     font-size: 12px;
-    color: var(--accent, #4f7cff);
+    color: var(--accent, var(--accent));
 }
 
 .dt-field-name,
 .dt-member-val,
 .dt-seed-input {
-    background: var(--bg-input, #121218);
-    color: var(--fg-main, #e1e1e8);
-    border: 1px solid var(--border-color, #2a2a36);
+    background: var(--bg-input, var(--surface-1));
+    color: var(--fg-main, var(--ink));
+    border: 1px solid var(--border-color, var(--line-strong));
     border-radius: 6px;
     padding: 4px 8px;
     width: 100%;
@@ -157,9 +157,9 @@
 
 .dt-field-type select {
     flex: 1 1 auto;
-    background: var(--bg-input, #121218);
-    color: var(--fg-main, #e1e1e8);
-    border: 1px solid var(--border-color, #2a2a36);
+    background: var(--bg-input, var(--surface-1));
+    color: var(--fg-main, var(--ink));
+    border: 1px solid var(--border-color, var(--line-strong));
     border-radius: 6px;
     padding: 4px 6px;
     min-width: 0;
@@ -167,9 +167,9 @@
 
 .dt-len-input {
     width: 64px;
-    background: var(--bg-input, #121218);
-    color: var(--fg-main, #e1e1e8);
-    border: 1px solid var(--border-color, #2a2a36);
+    background: var(--bg-input, var(--surface-1));
+    color: var(--fg-main, var(--ink));
+    border: 1px solid var(--border-color, var(--line-strong));
     border-radius: 6px;
     padding: 4px 6px;
 }
@@ -183,7 +183,7 @@
 
 .dt-eq {
     text-align: center;
-    color: var(--fg-muted, #9a9aab);
+    color: var(--fg-muted, var(--ink-2));
 }
 
 .dt-seed-row {
@@ -198,7 +198,7 @@
 
 .dt-icon-btn {
     background: transparent;
-    color: var(--fg-muted, #9a9aab);
+    color: var(--fg-muted, var(--ink-2));
     border: none;
     border-radius: 6px;
     width: 24px;
@@ -209,8 +209,8 @@
 }
 
 .dt-icon-btn:hover {
-    color: #ff6b6b;
-    background: rgba(255, 107, 107, 0.12);
+    color: var(--danger);
+    background: rgba(228, 106, 98, 0.12);
 }
 
 .dt-empty {
@@ -220,7 +220,7 @@
     justify-content: center;
     gap: 8px;
     padding: 48px 12px;
-    color: var(--fg-muted, #9a9aab);
+    color: var(--fg-muted, var(--ink-2));
     text-align: center;
 }
 

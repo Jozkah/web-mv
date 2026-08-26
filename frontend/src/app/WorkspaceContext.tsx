@@ -1,6 +1,7 @@
 import {
     createContext,
     createMemo,
+    createSignal,
     useContext,
     type JSX,
 } from "solid-js";
@@ -182,8 +183,26 @@ function hydrate(): WorkspaceStore | undefined {
 
 // ---- store ------------------------------------------------------------------
 
+// A closed tab remembered for "reopen closed tab". Layout-only and in-memory (like a browser's
+// recently-closed list): never persisted, capped so it cannot grow unbounded.
+interface ClosedTab {
+    kind: TabKind;
+    title?: string;
+    classId?: string;
+}
+const CLOSED_STACK_MAX = 20;
+
 function createWorkspaceState() {
     const [store, setStore] = createStore<WorkspaceStore>(hydrate() ?? freshWorkspace());
+    const [closedStack, setClosedStack] = createSignal<ClosedTab[]>([]);
+
+    const rememberClosed = (tabs: TabItem[]) => {
+        if (tabs.length === 0) return;
+        setClosedStack((cur) => {
+            const next = [...cur, ...tabs.map((t) => ({ kind: t.kind, title: t.title, classId: t.classId }))];
+            return next.slice(Math.max(0, next.length - CLOSED_STACK_MAX));
+        });
+    };
 
     persist(STORAGE_KEY, STORAGE_VERSION, () => ({
         groups: store.groups,
@@ -267,6 +286,8 @@ function createWorkspaceState() {
         },
 
         closeTab(tabId: string) {
+            const closed = this.tabById(tabId);
+            if (closed) rememberClosed([closed]);
             setStore(
                 produce((s) => {
                     const g = s.groups.find((g) => g.tabs.some((t) => t.id === tabId));
@@ -282,6 +303,8 @@ function createWorkspaceState() {
         },
 
         closeOtherTabs(tabId: string) {
+            const g0 = store.groups.find((g) => g.tabs.some((t) => t.id === tabId));
+            if (g0) rememberClosed(g0.tabs.filter((t) => t.id !== tabId));
             setStore(
                 produce((s) => {
                     const g = s.groups.find((g) => g.tabs.some((t) => t.id === tabId));
@@ -295,6 +318,11 @@ function createWorkspaceState() {
         },
 
         closeTabsToRight(tabId: string) {
+            const g0 = store.groups.find((g) => g.tabs.some((t) => t.id === tabId));
+            if (g0) {
+                const at = g0.tabs.findIndex((t) => t.id === tabId);
+                if (at >= 0) rememberClosed(g0.tabs.slice(at + 1));
+            }
             setStore(
                 produce((s) => {
                     const g = s.groups.find((g) => g.tabs.some((t) => t.id === tabId));
@@ -305,6 +333,17 @@ function createWorkspaceState() {
                     if (!g.tabs.some((t) => t.id === g.activeTabId)) g.activeTabId = tabId;
                 }),
             );
+        },
+
+        canReopen: () => closedStack().length > 0,
+
+        // Reopen the most recently closed tab in the active group, restoring its kind/title/class.
+        reopenClosedTab() {
+            const stack = closedStack();
+            if (stack.length === 0) return;
+            const last = stack[stack.length - 1];
+            setClosedStack(stack.slice(0, -1));
+            this.addTab(last.kind, { title: last.title, classId: last.classId });
         },
 
         // Reorder a tab within its group from one index to another (drag-to-reorder).

@@ -2,33 +2,39 @@
    lives in ui/panels.css; this file only adds the three-pane workspace, pane sizing, the
    sort/search bars, the function-row controls, and the disassembly host. */
 
-.workspace {
+/* Namespaced (sv-*) so these generic layout names never collide with the app shell's
+   .rail (activity rail) or the workspace tab container's .workspace. */
+.sv-workspace {
     flex: 1 1 auto;
+    min-width: 0;
     min-height: 0;
     display: flex;
     gap: 12px;
     padding: 12px;
     box-sizing: border-box;
+    /* Four panes are inherently wide; keep them scrollable INSIDE the view rather than
+       clipping or pushing the page into horizontal scroll on smaller desktops. */
+    overflow-x: auto;
 }
 
-.rail {
-    flex: 0 0 300px;
+.sv-rail {
+    flex: 0 0 232px;
     display: flex;
     flex-direction: column;
     gap: 12px;
     min-height: 0;
 }
 
-.rail .panel-modules {
+.sv-rail .panel-modules {
     flex: 2 1 0;
 }
-.rail .panel-pinned {
+.sv-rail .panel-pinned {
     flex: 1 1 0;
 }
 .panel-functions {
     /* Width is content-derived inline (see FunctionList); these just bound it. */
     flex: 0 0 auto;
-    min-width: 320px;
+    min-width: 260px;
     max-width: 720px;
 }
 .panel-disasm {
@@ -297,7 +303,7 @@
 }
 .sig-error {
     font-size: 12px;
-    color: #ef4444;
+    color: #e46a62;
 }
 
 .fn-sig-tag {
@@ -306,16 +312,16 @@
     padding: 0 4px;
     margin-left: 6px;
     border-radius: 3px;
-    background: rgba(168, 85, 247, 0.2);
-    color: #c084fc;
-    border: 1px solid rgba(168, 85, 247, 0.4);
+    background: rgba(105, 165, 200, 0.2);
+    color: #69a5c8;
+    border: 1px solid rgba(105, 165, 200, 0.4);
     display: inline-block;
     vertical-align: middle;
 }
 .fn-sig-tag.prologue {
-    background: rgba(56, 189, 248, 0.2);
-    color: #38bdf8;
-    border-color: rgba(56, 189, 248, 0.5);
+    background: rgba(105, 165, 200, 0.2);
+    color: var(--accent-strong);
+    border-color: rgba(105, 165, 200, 0.5);
     font-weight: bold;
 }
 

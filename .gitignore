@@ -17,3 +17,6 @@ HANDOFF.md
 relay/nul
 nul
 
+
+# Playwright MCP session artifacts
+.playwright-mcp/

@@ -1,56 +1,300 @@
+/* ============================================================================
+   SIGNAL WORKBENCH — design tokens + theming
+   Three switchable themes, all sharing the #69A5C8 base accent:
+     • Echo      — the current blue-black graphite look (the :root default)
+     • Dark      — modern neutral (grey) dark
+     • Off-White — warm, low-glare light
+   Every colour is a semantic token; views consume tokens and never hardcode.
+   Non-colour tokens (spacing/radius/type/motion/metrics/fonts) live once in
+   :root. Colour tokens default to Echo in :root and are overridden per theme
+   under :root[data-theme="dark"] / :root[data-theme="offwhite"]. The legacy
+   names (--bg, --accent, --code-bg, ...) alias the semantic tokens so existing
+   view stylesheets theme automatically.
+   ============================================================================ */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --scrollbar-thumb: #d3d1d9;
-  --scrollbar-thumb-hover: var(--accent-border);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* --- Spacing scale ----------------------------------------------------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* --- Radii (6–8px chrome, 4px on dense inner controls) ----------------- */
+  --r-sm: 4px;
+  --r: 6px;
+  --r-lg: 8px;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  /* --- Chrome metrics ---------------------------------------------------- */
+  --appbar-h: 44px;
+  --rail-w: 42px;
+  --statusbar-h: 24px;
+  --sidebar-w: 232px;
+  --control-h: 32px;
+
+  /* --- Type -------------------------------------------------------------- */
+  --fs-ui: 13px;
+  --fs-body: 14px;
+  --fs-code: 13px;
+  --fs-micro: 11px;
+
+  /* --- Motion ------------------------------------------------------------ */
+  --t-fast: 0.12s ease;
+  --t: 0.16s ease;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* --- Fonts ------------------------------------------------------------- */
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  --heading: var(--sans);
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "Cascadia Mono",
+    "Source Code Pro", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* ======================================================================
+     ECHO theme (default) — blue-black graphite + steel-blue accent
+     ====================================================================== */
+  --surface-0: #07090d;
+  --surface-1: #0c1016;
+  --surface-2: #11161e;
+  --surface-3: #161d27;
+  --surface-4: #1e2733;
+  --surface-float: #10151c;
+
+  --line: #232f3d;
+  --line-soft: #19212c;
+  --line-strong: #30404f;
+
+  --ink: #e7edf4;
+  --ink-2: #9aa8ba;
+  --ink-3: #5f6d7c;
+
+  --accent: #69a5c8;
+  --accent-strong: #8cc0dd;
+  --accent-soft: #4f7f9c;
+  --accent-bg: rgba(105, 165, 200, 0.12);
+  --accent-bg-strong: rgba(105, 165, 200, 0.18);
+  --accent-line: rgba(105, 165, 200, 0.42);
+  --accent-focus: rgba(105, 165, 200, 0.55);
+  --on-accent: #08121a; /* readable text/icon on an accent fill */
+
+  --live: #57c185;
+  --live-bg: rgba(87, 193, 133, 0.14);
+  --live-line: rgba(87, 193, 133, 0.42);
+  --warn: #e2a13a;
+  --warn-bg: rgba(226, 161, 58, 0.14);
+  --danger: #e46a62;
+  --danger-bg: rgba(228, 106, 98, 0.14);
+  --danger-line: rgba(228, 106, 98, 0.45);
+
+  --social-bg: rgba(255, 255, 255, 0.04);
+  --scrollbar-thumb: #263340;
+
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --elev-2: 0 8px 24px -6px rgba(0, 0, 0, 0.55),
+    0 2px 6px -2px rgba(0, 0, 0, 0.4);
+  --elev-pop: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 14px 34px rgba(0, 0, 0, 0.5);
+
+  color-scheme: dark;
+
+  /* --- Derived / signature ---------------------------------------------- */
+  --scrollbar-thumb-hover: var(--accent-line);
+  --signal: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    rgba(105, 165, 200, 0.35) 58%,
+    transparent 100%
+  );
+
+  /* ---- Legacy aliases (existing view CSS reads these) ------------------- */
+  --bg: var(--surface-2);
+  --bg-deep: var(--surface-0);
+  --bg-shell: var(--surface-0);
+  --code-bg: var(--surface-3);
+  --btn-bg: var(--surface-4);
+  --border: var(--line);
+  --border-soft: var(--line-soft);
+  --text: var(--ink-2);
+  --text-h: var(--ink);
+  --text-dim: var(--ink-3);
+  --accent-border: var(--accent-line);
+  --shadow: var(--elev-2);
+  --hue-bar: var(--signal);
+  --bevel: 0 0 0 1px var(--line-soft);
+  --radius: var(--r);
+  --pop-shadow: var(--elev-pop);
+
+  accent-color: var(--accent);
+
+  font: var(--fs-body) / 1.45 var(--sans);
+  color: var(--ink-2);
+  background: var(--surface-1);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
   @media (max-width: 1024px) {
-    font-size: 16px;
+    font-size: var(--fs-ui);
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --scrollbar-thumb: #3a3c47;
-    --scrollbar-thumb-hover: var(--accent-border);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+/* ========================================================================
+   DARK theme — modern neutral grey (base accent unchanged)
+   ======================================================================== */
+:root[data-theme="dark"] {
+  --surface-0: #0d0d0f;
+  --surface-1: #141416;
+  --surface-2: #1a1a1d;
+  --surface-3: #202024;
+  --surface-4: #28282e;
+  --surface-float: #16161a;
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+  --line: #2d2d33;
+  --line-soft: #202024;
+  --line-strong: #3a3a42;
+
+  --ink: #ececef;
+  --ink-2: #a2a2ab;
+  --ink-3: #6b6b74;
+
+  --accent: #69a5c8;
+  --accent-strong: #8cc0dd;
+  --accent-soft: #5f8ba6;
+  --accent-bg: rgba(105, 165, 200, 0.14);
+  --accent-bg-strong: rgba(105, 165, 200, 0.2);
+  --accent-line: rgba(105, 165, 200, 0.42);
+  --accent-focus: rgba(105, 165, 200, 0.55);
+  --on-accent: #08121a;
+
+  --live: #57c185;
+  --live-bg: rgba(87, 193, 133, 0.14);
+  --live-line: rgba(87, 193, 133, 0.42);
+  --warn: #e2a13a;
+  --warn-bg: rgba(226, 161, 58, 0.14);
+  --danger: #e46a62;
+  --danger-bg: rgba(228, 106, 98, 0.14);
+  --danger-line: rgba(228, 106, 98, 0.45);
+
+  --social-bg: rgba(255, 255, 255, 0.05);
+  --scrollbar-thumb: #34343b;
+
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --elev-2: 0 8px 24px -6px rgba(0, 0, 0, 0.6),
+    0 2px 6px -2px rgba(0, 0, 0, 0.45);
+  --elev-pop: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 14px 34px rgba(0, 0, 0, 0.55);
+
+  color-scheme: dark;
+}
+
+/* ========================================================================
+   OFF-WHITE theme — warm, low-glare light. Accent is DARKENED from the base
+   #69A5C8 so it stays accessible as text/active on a light ground, while the
+   base-hue tints (bg/border/selection) keep the shared identity.
+   ======================================================================== */
+:root[data-theme="offwhite"] {
+  --surface-0: #e7e1d5;
+  --surface-1: #f2ede3;
+  --surface-2: #f9f5ec;
+  --surface-3: #fffdf7;
+  --surface-4: #ece5d7;
+  --surface-float: #fffdf8;
+
+  --line: #d9cfbd;
+  --line-soft: #e7dfce;
+  --line-strong: #c6baa3;
+
+  --ink: #2a2925;
+  --ink-2: #5b564c;
+  --ink-3: #8b8477;
+
+  --accent: #2f6f8f;
+  --accent-strong: #245a73;
+  --accent-soft: #6a94a8;
+  --accent-bg: rgba(105, 165, 200, 0.22);
+  --accent-bg-strong: rgba(105, 165, 200, 0.32);
+  --accent-line: rgba(47, 111, 143, 0.45);
+  --accent-focus: rgba(47, 111, 143, 0.55);
+  --on-accent: #ffffff;
+
+  --live: #2f8f5f;
+  --live-bg: rgba(47, 143, 95, 0.16);
+  --live-line: rgba(47, 143, 95, 0.45);
+  --warn: #b0751a;
+  --warn-bg: rgba(176, 117, 26, 0.16);
+  --danger: #c2453c;
+  --danger-bg: rgba(194, 69, 60, 0.16);
+  --danger-line: rgba(194, 69, 60, 0.45);
+
+  --social-bg: rgba(40, 35, 20, 0.05);
+  --scrollbar-thumb: #cfc4b1;
+
+  --elev-1: 0 1px 2px rgba(60, 50, 30, 0.12);
+  --elev-2: 0 8px 24px -6px rgba(60, 50, 30, 0.18),
+    0 2px 6px -2px rgba(60, 50, 30, 0.12);
+  --elev-pop: 0 0 0 1px rgba(120, 105, 75, 0.18), 0 14px 34px rgba(60, 50, 30, 0.16);
+
+  color-scheme: light;
+}
+
+/* Usability baseline ------------------------------------------------------- */
+
+#social .button-icon {
+  filter: invert(1) brightness(2);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-focus);
+  outline-offset: 1px;
+}
+
+::selection {
+  background: var(--accent-bg-strong);
+  color: var(--ink);
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-3);
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent-line);
+}
+select option {
+  background: var(--surface-float);
+  color: var(--ink);
+}
+
+button {
+  font: inherit;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -58,15 +302,10 @@ body {
   margin: 0;
 }
 
-/* Slim, theme-matched scrollbars in place of the chunky default ones. Firefox reads the
-   scrollbar-* shorthands; Chromium/WebKit reads the ::-webkit-scrollbar pseudo-elements.
-   The thumb is a quiet neutral that lifts to the accent on hover; the track is transparent
-   so it blends into whatever panel it sits in. */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
-
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -77,7 +316,6 @@ body {
 ::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 8px;
-  /* Inset the thumb off the track edges with a transparent border. */
   border: 2px solid transparent;
   background-clip: padding-box;
 }
@@ -97,31 +335,31 @@ body {
   flex-direction: column;
   box-sizing: border-box;
   overflow: hidden;
+  background: var(--surface-1);
 }
 
 h1,
 h2 {
   font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+  font-weight: 600;
+  color: var(--ink);
 }
-
 h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
+  font-size: 34px;
+  letter-spacing: -0.6px;
+  margin: 28px 0;
   @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
+    font-size: 26px;
+    margin: 18px 0;
   }
 }
 h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
+  font-size: 19px;
+  line-height: 1.2;
+  letter-spacing: -0.2px;
   margin: 0 0 8px;
   @media (max-width: 1024px) {
-    font-size: 20px;
+    font-size: 17px;
   }
 }
 p {
@@ -132,13 +370,13 @@ code,
 .counter {
   font-family: var(--mono);
   display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+  border-radius: var(--r-sm);
+  color: var(--ink);
 }
-
 code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+  font-size: var(--fs-code);
+  line-height: 1.35;
+  padding: 3px 7px;
+  background: var(--surface-3);
+  border: 1px solid var(--line-soft);
 }

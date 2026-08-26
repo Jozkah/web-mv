@@ -4,7 +4,87 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>Signal Workbench</title>
+    <script>
+      /* Apply the saved theme + custom accent before first paint so there is no
+         flash on startup. Mirrors ShellContext (keys "ax.theme" / "ax.accent")
+         and src/app/shell/accent.ts's derivation — keep them in sync. */
+      (function () {
+        try {
+          var el = document.documentElement, s = el.style;
+          var h2 = function (n) { return Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0"); };
+          function norm(v, dflt) {
+            v = (v || "").trim().toLowerCase();
+            if (v[0] !== "#") v = "#" + v;
+            if (/^#[0-9a-f]{3}$/.test(v)) v = "#" + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
+            return /^#[0-9a-f]{6}$/.test(v) ? v : dflt;
+          }
+          function rgb(hex) { return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)]; }
+          function mix(hex, tgt, k) { var a = rgb(hex), c = rgb(tgt); return "#" + h2(a[0] + (c[0] - a[0]) * k) + h2(a[1] + (c[1] - a[1]) * k) + h2(a[2] + (c[2] - a[2]) * k); }
+          function lum(hex) { var c = rgb(hex); return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]; }
+
+          var t = localStorage.getItem("ax.theme");
+          if (t === "echo") t = "custom"; // legacy id
+          if (t !== "dark" && t !== "offwhite" && t !== "custom") t = "custom";
+          el.setAttribute("data-theme", t);
+
+          if (t !== "custom") {
+            el.style.background = { dark: "#141416", offwhite: "#f2ede3" }[t];
+            el.style.colorScheme = t === "offwhite" ? "light" : "dark";
+            return;
+          }
+
+          var acc = norm(localStorage.getItem("ax.accent"), "#69a5c8");
+          var bg = norm(localStorage.getItem("ax.bg"), "#0c1016");
+          var dark = lum(bg) < 128;
+          el.style.background = bg;
+          el.style.colorScheme = dark ? "dark" : "light";
+
+          // Accent family.
+          var a = rgb(acc);
+          s.setProperty("--accent", acc);
+          s.setProperty("--accent-strong", mix(acc, "#ffffff", 0.22));
+          s.setProperty("--accent-soft", mix(acc, "#000000", 0.22));
+          s.setProperty("--accent-bg", "rgba(" + a[0] + ", " + a[1] + ", " + a[2] + ", 0.12)");
+          s.setProperty("--accent-bg-strong", "rgba(" + a[0] + ", " + a[1] + ", " + a[2] + ", 0.18)");
+          s.setProperty("--accent-line", "rgba(" + a[0] + ", " + a[1] + ", " + a[2] + ", 0.42)");
+          s.setProperty("--accent-focus", "rgba(" + a[0] + ", " + a[1] + ", " + a[2] + ", 0.55)");
+          s.setProperty("--on-accent", lum(acc) > 150 ? "#08121a" : "#ffffff");
+          s.setProperty("--signal", "linear-gradient(90deg, " + acc + " 0%, rgba(" + a[0] + ", " + a[1] + ", " + a[2] + ", 0.35) 58%, transparent 100%)");
+
+          // Surface / line / ink family (from the background base).
+          var ink = dark ? "#e7edf4" : "#22221e";
+          if (dark) {
+            s.setProperty("--surface-0", mix(bg, "#000000", 0.38));
+            s.setProperty("--surface-1", bg);
+            s.setProperty("--surface-2", mix(bg, "#ffffff", 0.035));
+            s.setProperty("--surface-3", mix(bg, "#ffffff", 0.05));
+            s.setProperty("--surface-4", mix(bg, "#ffffff", 0.09));
+            s.setProperty("--surface-float", mix(bg, "#ffffff", 0.02));
+            s.setProperty("--line", mix(bg, "#ffffff", 0.12));
+            s.setProperty("--line-soft", mix(bg, "#ffffff", 0.06));
+            s.setProperty("--line-strong", mix(bg, "#ffffff", 0.17));
+            s.setProperty("--social-bg", "rgba(255, 255, 255, 0.04)");
+            s.setProperty("--scrollbar-thumb", mix(bg, "#ffffff", 0.12));
+          } else {
+            s.setProperty("--surface-0", mix(bg, "#000000", 0.06));
+            s.setProperty("--surface-1", bg);
+            s.setProperty("--surface-2", mix(bg, "#ffffff", 0.45));
+            s.setProperty("--surface-3", mix(bg, "#ffffff", 0.72));
+            s.setProperty("--surface-4", mix(bg, "#000000", 0.045));
+            s.setProperty("--surface-float", mix(bg, "#ffffff", 0.6));
+            s.setProperty("--line", mix(bg, "#000000", 0.13));
+            s.setProperty("--line-soft", mix(bg, "#000000", 0.06));
+            s.setProperty("--line-strong", mix(bg, "#000000", 0.22));
+            s.setProperty("--social-bg", "rgba(0, 0, 0, 0.05)");
+            s.setProperty("--scrollbar-thumb", mix(bg, "#000000", 0.2));
+          }
+          s.setProperty("--ink", ink);
+          s.setProperty("--ink-2", mix(ink, bg, dark ? 0.35 : 0.42));
+          s.setProperty("--ink-3", mix(ink, bg, 0.62));
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

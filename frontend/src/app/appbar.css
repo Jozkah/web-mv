@@ -1,0 +1,336 @@
+/* Application bar (44px): identity + workspace name + jump history on the left, the universal
+   command field in the centre, and the target switcher + Session / More menus on the right. */
+
+.appbar {
+    position: relative;
+    flex: 0 0 var(--appbar-h);
+    height: var(--appbar-h);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: 0 10px;
+    background: var(--surface-0);
+    border-bottom: 1px solid var(--line-soft);
+    z-index: 5;
+}
+
+.appbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.brand-mark {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    background: linear-gradient(150deg, var(--accent) 0%, var(--accent-soft) 100%);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 0 10px -2px var(--accent-line);
+    position: relative;
+}
+.brand-mark::after {
+    content: "";
+    position: absolute;
+    left: 3px;
+    right: 3px;
+    top: 50%;
+    height: 2px;
+    transform: translateY(-50%);
+    background: var(--surface-0);
+    opacity: 0.85;
+    border-radius: 2px;
+}
+.brand-name {
+    font-size: var(--fs-body);
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    color: var(--ink);
+}
+.appbar-workspace {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--mono);
+    font-size: var(--fs-micro);
+    color: var(--ink-3);
+    padding-left: 10px;
+    border-left: 1px solid var(--line-soft);
+}
+.appbar-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding-left: 4px;
+}
+
+/* The universal command / address field. Rendered as a button that opens the palette. */
+.command-field {
+    flex: 1 1 auto;
+    max-width: 560px;
+    margin: 0 auto;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px 0 11px;
+    color: var(--ink-3);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    cursor: text;
+    transition: border-color var(--t-fast), background var(--t-fast);
+}
+.command-field:hover {
+    border-color: var(--line-strong);
+    background: var(--surface-3);
+}
+.command-field svg {
+    color: var(--ink-3);
+    flex: 0 0 auto;
+}
+.command-field-text {
+    flex: 1 1 auto;
+    text-align: left;
+    font-size: var(--fs-ui);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.command-field-kbd {
+    flex: 0 0 auto;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-3);
+    background: var(--surface-4);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    padding: 1px 6px;
+}
+
+.appbar-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+}
+.appbar-menu {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.appbar-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 9px;
+    font-size: var(--fs-ui);
+    color: var(--ink-2);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+}
+.appbar-menu-btn svg {
+    color: var(--ink-3);
+}
+.appbar-menu-btn:hover,
+.appbar-menu-btn.open {
+    color: var(--ink);
+    background: var(--surface-4);
+    border-color: var(--line);
+}
+
+/* Target switcher ---------------------------------------------------------- */
+
+.target-switch {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.target-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 30px;
+    max-width: 220px;
+    padding: 0 8px 0 10px;
+    font-size: var(--fs-ui);
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: border-color var(--t-fast), background var(--t-fast);
+}
+.target-btn:hover,
+.target-btn.open {
+    border-color: var(--line-strong);
+    background: var(--surface-3);
+}
+.target-btn.live {
+    border-color: var(--live-line);
+}
+.target-btn-label {
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--mono);
+    font-size: var(--fs-micro);
+}
+.target-btn-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--live);
+    background: var(--live-bg);
+    border-radius: 999px;
+    padding: 1px 6px;
+}
+.target-btn svg {
+    color: var(--ink-3);
+}
+
+.target-pop {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 300;
+    width: 300px;
+    padding: 5px;
+    background: var(--surface-float);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    box-shadow: var(--elev-pop);
+    animation: pop-in 0.12s var(--ease-out);
+}
+.target-pop-head {
+    padding: 6px 8px 4px;
+    font-size: var(--fs-micro);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+.target-pop-sep {
+    height: 1px;
+    margin: 4px 2px;
+    background: var(--line);
+}
+.target-pop-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 2px;
+    border-radius: var(--r-sm);
+}
+.target-pop-row.active {
+    background: var(--accent-bg);
+}
+.target-pop-row > .target-pop-pick,
+.target-pop-row.active {
+    color: var(--ink);
+}
+.target-pop-row > button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+}
+.target-pop-pick {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 7px;
+    text-align: left;
+    border-radius: var(--r-sm);
+}
+.target-pop-row:not(.active) .target-pop-pick:hover {
+    background: var(--surface-3);
+}
+.target-pop > button.target-pop-row {
+    text-align: left;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px 7px;
+}
+.target-pop > button.target-pop-row:hover {
+    background: var(--surface-3);
+}
+.target-pop-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.target-pop-name {
+    font-size: var(--fs-ui);
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.target-pop-sub {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.target-pop-check {
+    color: var(--accent);
+    padding-right: 4px;
+}
+.target-pop-forget {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: var(--ink-3);
+    border-radius: var(--r-sm);
+}
+.target-pop-forget:hover {
+    color: var(--danger);
+    background: var(--danger-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .target-pop,
+    .command-field,
+    .target-btn,
+    .appbar-menu-btn {
+        animation: none;
+        transition: none;
+    }
+}
+
+/* On tight widths the workspace label and command placeholder yield first. */
+@media (max-width: 1180px) {
+    .appbar-workspace {
+        display: none;
+    }
+}
+@media (max-width: 980px) {
+    .command-field-text {
+        display: none;
+    }
+}

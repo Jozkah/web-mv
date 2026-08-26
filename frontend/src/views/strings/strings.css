@@ -120,7 +120,7 @@
     transition: background 120ms;
 }
 .strings-export-btn:hover {
-    background: rgba(170, 59, 255, 0.25);
+    background: rgba(105, 165, 200, 0.25);
 }
 
 .strings-search-bar {
@@ -149,7 +149,7 @@
 .strings-warn {
     margin: 0;
     font-size: 13px;
-    color: #d97706;
+    color: #e2a13a;
 }
 
 /* Progress bar */
@@ -271,14 +271,14 @@
     letter-spacing: 0;
 }
 .strings-type-badge.ascii {
-    color: #10b981;
-    background: rgba(16, 185, 129, 0.15);
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #57c185;
+    background: rgba(87, 193, 133, 0.15);
+    border: 1px solid rgba(87, 193, 133, 0.3);
 }
 .strings-type-badge.utf16 {
-    color: #f59e0b;
-    background: rgba(245, 158, 11, 0.15);
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #e2a13a;
+    background: rgba(226, 161, 58, 0.15);
+    border: 1px solid rgba(226, 161, 58, 0.3);
 }
 
 /* Responsive: collapse address column on small screens */

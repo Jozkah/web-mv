@@ -16,9 +16,9 @@
 }
 
 .cheat-input {
-    background: var(--panel-2, #1b1f27);
-    border: 1px solid var(--border, #333a45);
-    color: var(--text, #e6e9ef);
+    background: var(--panel-2, var(--surface-3));
+    border: 1px solid var(--border, var(--line-strong));
+    color: var(--text, var(--ink));
     border-radius: 4px;
     padding: 4px 8px;
     font-size: 12px;
@@ -28,7 +28,7 @@
 .cheat-input.cheat-setval { width: 90px; font-family: ui-monospace, monospace; }
 
 .cheat-btn {
-    background: var(--accent, #2b6cff);
+    background: var(--accent);
     color: #fff;
     border: none;
     border-radius: 4px;
@@ -38,14 +38,14 @@
 }
 .cheat-btn:hover { filter: brightness(1.1); }
 .cheat-btn.small { padding: 3px 7px; margin-left: 4px; }
-.cheat-btn.ghost { background: transparent; color: var(--muted, #8a93a3); font-size: 16px; line-height: 1; padding: 0 6px; }
-.cheat-btn.ghost:hover { color: #ff6b6b; }
+.cheat-btn.ghost { background: transparent; color: var(--muted, var(--ink-2)); font-size: 16px; line-height: 1; padding: 0 6px; }
+.cheat-btn.ghost:hover { color: var(--danger); }
 
-.cheat-warn { color: #f5a623; font-size: 11px; }
+.cheat-warn { color: var(--warn); font-size: 11px; }
 .cheat-warn.small { display: block; margin-top: 2px; }
 
 .cheat-empty {
-    color: var(--muted, #8a93a3);
+    color: var(--muted, var(--ink-2));
     font-size: 13px;
     padding: 24px 8px;
     text-align: center;
@@ -58,25 +58,25 @@
 }
 .cheat-table th {
     text-align: left;
-    color: var(--muted, #8a93a3);
+    color: var(--muted, var(--ink-2));
     font-weight: 500;
     padding: 4px 8px;
-    border-bottom: 1px solid var(--border, #333a45);
+    border-bottom: 1px solid var(--border, var(--line-strong));
     position: sticky;
     top: 0;
-    background: var(--panel, #12151b);
+    background: var(--panel, var(--surface-1));
 }
 .cheat-table td {
     padding: 4px 8px;
-    border-bottom: 1px solid var(--border-soft, #22262f);
+    border-bottom: 1px solid var(--border-soft, var(--line-strong));
     vertical-align: middle;
 }
-.cheat-table tr.frozen td { background: rgba(43, 108, 255, 0.08); }
+.cheat-table tr.frozen td { background: var(--accent-bg); }
 .cheat-table .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.cheat-table .muted { color: var(--muted, #8a93a3); }
-.cheat-table .bad { color: #ff6b6b; }
+.cheat-table .muted { color: var(--muted, var(--ink-2)); }
+.cheat-table .bad { color: var(--danger); }
 .col-freeze { width: 28px; text-align: center; }
-.col-value { color: #7ee787; }
+.col-value { color: var(--live); }
 .col-rm { width: 66px; text-align: center; white-space: nowrap; }
 
 .cheat-table tr.selected td { box-shadow: inset 2px 0 0 var(--accent); }

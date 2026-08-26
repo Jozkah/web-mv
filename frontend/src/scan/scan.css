@@ -90,7 +90,7 @@
     top: 1px;
     width: 3px;
     height: 7px;
-    border: solid #4a1a73;
+    border: solid var(--accent);
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);
 }
@@ -143,7 +143,9 @@
     z-index: 30;
     width: 280px;
     max-width: 70vw;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    background: var(--bg-deep);
+    box-shadow: var(--pop-shadow);
+    animation: pop-in 0.12s ease-out;
 }
 .module-picker-pop .search {
     margin: 8px;
@@ -157,7 +159,7 @@
 .scan-warn {
     margin: 0;
     font-size: 13px;
-    color: #d97706;
+    color: #e2a13a;
 }
 
 /* Results: one group per pattern, hit rows beneath each group head. */
@@ -227,9 +229,9 @@
     font-size: 11px;
     padding: 1px 6px;
     border-radius: 4px;
-    background: rgba(168, 85, 247, 0.15);
-    color: #c084fc;
-    border: 1px solid rgba(168, 85, 247, 0.3);
+    background: rgba(105, 165, 200, 0.15);
+    color: #69a5c8;
+    border: 1px solid rgba(105, 165, 200, 0.3);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -237,13 +239,13 @@
     flex: 1 1 auto;
 }
 .fn-badge.prologue {
-    background: rgba(56, 189, 248, 0.15);
-    color: #38bdf8;
-    border-color: rgba(56, 189, 248, 0.4);
+    background: rgba(105, 165, 200, 0.15);
+    color: var(--accent-strong);
+    border-color: rgba(105, 165, 200, 0.4);
     font-weight: 600;
 }
 .fn-badge.unmapped {
-    background: rgba(148, 163, 184, 0.1);
+    background: rgba(94, 107, 120, 0.1);
     color: var(--text);
     border-color: transparent;
     font-style: italic;

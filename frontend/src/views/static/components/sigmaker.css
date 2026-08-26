@@ -6,7 +6,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.45);
+    background-color: rgba(0, 0, 0, 0.55);
     backdrop-filter: blur(4px);
     z-index: 9999;
     display: flex;
@@ -24,8 +24,8 @@
 .sigmaker-modal {
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    box-shadow: var(--pop-shadow);
     width: 860px;
     max-width: 95vw;
     max-height: 90vh;
@@ -37,18 +37,31 @@
 }
 
 .sigmaker-header {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 18px;
-    background: var(--code-bg);
-    border-bottom: 1px solid var(--border);
+    padding: 10px 18px 11px;
+    background: var(--bg-deep);
+}
+/* Echo title bar: accent hue bar in place of a plain border. */
+.sigmaker-header::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--hue-bar);
+    pointer-events: none;
 }
 
 .sigmaker-title-box h3 {
     margin: 0;
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
     color: var(--accent);
     display: flex;
     align-items: center;
@@ -73,7 +86,7 @@
 
 .sigmaker-close-btn:hover {
     background: var(--accent-bg);
-    color: #ef4444;
+    color: #e46a62;
 }
 
 .sigmaker-body {
@@ -145,16 +158,16 @@
 /* Active / primary buttons — solid purple, white text (readable in both themes) */
 .sigmaker-mode-group button.active,
 .sigmaker-btn.primary {
-    background: #8b5cf6;
-    border-color: #7c3aed;
+    background: var(--accent-strong);
+    border-color: var(--accent);
     color: #ffffff;
     font-weight: 600;
 }
 
 .sigmaker-mode-group button.active:hover,
 .sigmaker-btn.primary:hover:not(:disabled) {
-    background: #7c3aed;
-    border-color: #7c3aed;
+    background: var(--accent);
+    border-color: var(--accent);
 }
 
 .sigmaker-btn:disabled {
@@ -247,21 +260,21 @@
 }
 
 .status-pill.success {
-    background: rgba(34, 197, 94, 0.15);
-    border: 1px solid rgba(34, 197, 94, 0.35);
-    color: #16a34a;
+    background: rgba(87, 193, 133, 0.15);
+    border: 1px solid rgba(87, 193, 133, 0.35);
+    color: var(--live);
 }
 
 .status-pill.warn {
-    background: rgba(245, 158, 11, 0.15);
-    border: 1px solid rgba(245, 158, 11, 0.35);
-    color: #d97706;
+    background: rgba(226, 161, 58, 0.15);
+    border: 1px solid rgba(226, 161, 58, 0.35);
+    color: #e2a13a;
 }
 
 .status-pill.err {
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.35);
-    color: #dc2626;
+    background: rgba(228, 106, 98, 0.15);
+    border: 1px solid rgba(228, 106, 98, 0.35);
+    color: var(--danger);
 }
 
 .sigmaker-meta-info {
@@ -341,9 +354,9 @@
 }
 
 .byte-pill.wildcard {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.4);
-    color: #dc2626;
+    background: rgba(228, 106, 98, 0.15);
+    border-color: rgba(228, 106, 98, 0.4);
+    color: var(--danger);
     font-weight: bold;
 }
 
@@ -387,7 +400,7 @@
 .exporter-tabs .copy-btn {
     margin-left: auto;
     border-bottom: none;
-    background: #8b5cf6;
+    background: var(--accent-strong);
     color: #ffffff;
     border-radius: 4px;
     padding: 4px 10px;
@@ -396,7 +409,7 @@
 }
 
 .exporter-tabs .copy-btn:hover {
-    background: #7c3aed;
+    background: var(--accent);
     color: #ffffff;
 }
 

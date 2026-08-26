@@ -44,6 +44,17 @@ export function WorkspaceView() {
                 const dir = e.shiftKey ? -1 : 1;
                 const next = tabs[(cur + dir + tabs.length) % tabs.length];
                 ws.selectTab(next.id);
+                return;
+            }
+            // Ctrl+1..9 jump straight to the Nth tab (9 = last, browser-style).
+            if (mod && !e.shiftKey && !e.altKey && e.key >= "1" && e.key <= "9") {
+                const tabs = group.tabs;
+                if (tabs.length === 0) return;
+                const n = Number(e.key);
+                const target = n === 9 ? tabs[tabs.length - 1] : tabs[n - 1];
+                if (!target) return;
+                e.preventDefault();
+                ws.selectTab(target.id);
             }
         };
         window.addEventListener("keydown", onKey);

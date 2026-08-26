@@ -20,7 +20,9 @@
 .goto-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
     display: flex;
     align-items: flex-start;
     justify-content: center;
@@ -30,10 +32,11 @@
 
 .goto-dialog {
     width: min(560px, 92vw);
-    background: var(--bg);
+    background: var(--bg-deep);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    box-shadow: var(--pop-shadow);
+    animation: pop-in 0.12s ease-out;
     padding: 16px;
     display: flex;
     flex-direction: column;
@@ -54,7 +57,7 @@
     font-size: 14px;
     padding: 9px 11px;
     border: 1px solid var(--border);
-    border-radius: 7px;
+    border-radius: var(--radius);
     background: var(--code-bg);
     color: var(--text-h);
     outline: none;
@@ -75,7 +78,7 @@
 }
 
 .goto-preview.bad {
-    color: #ef4444;
+    color: #e46a62;
 }
 
 .goto-actions {
@@ -94,9 +97,9 @@
     font: inherit;
     font-size: 13px;
     padding: 7px 13px;
-    border-radius: 7px;
+    border-radius: var(--radius);
     border: 1px solid var(--border);
-    background: transparent;
+    background: var(--btn-bg);
     color: var(--text-h);
     cursor: pointer;
 }

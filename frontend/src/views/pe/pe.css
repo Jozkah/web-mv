@@ -16,9 +16,9 @@
 }
 
 .pe-input {
-    background: var(--panel-2, #1b1f27);
-    border: 1px solid var(--border, #333a45);
-    color: var(--text, #e6e9ef);
+    background: var(--panel-2, var(--surface-3));
+    border: 1px solid var(--border, var(--line-strong));
+    color: var(--text, var(--ink));
     border-radius: 4px;
     padding: 4px 8px;
     font-size: 12px;
@@ -26,7 +26,7 @@
 }
 
 .pe-btn {
-    background: var(--accent, #2b6cff);
+    background: var(--accent);
     color: #fff;
     border: none;
     border-radius: 4px;
@@ -38,8 +38,8 @@
 .pe-btn:disabled { opacity: 0.5; cursor: default; }
 .pe-btn.small { padding: 3px 8px; }
 
-.pe-note { color: #7ee787; font-size: 11px; }
-.pe-warn { color: #f5a623; font-size: 11px; padding: 4px 0; }
+.pe-note { color: var(--live); font-size: 11px; }
+.pe-warn { color: var(--warn); font-size: 11px; padding: 4px 0; }
 
 .pe-panels {
     display: flex;
@@ -50,7 +50,7 @@
 }
 
 .pe-panel {
-    border: 1px solid var(--border, #333a45);
+    border: 1px solid var(--border, var(--line-strong));
     border-radius: 6px;
     overflow: hidden;
 }
@@ -59,13 +59,13 @@
     align-items: center;
     gap: 8px;
     padding: 6px 10px;
-    background: var(--panel-2, #1b1f27);
-    border-bottom: 1px solid var(--border, #333a45);
+    background: var(--panel-2, var(--surface-3));
+    border-bottom: 1px solid var(--border, var(--line-strong));
 }
 .pe-panel-title { font-weight: 600; font-size: 12px; }
 .pe-panel-count {
     font-size: 11px;
-    color: var(--muted, #8a93a3);
+    color: var(--muted, var(--ink-2));
     background: rgba(255, 255, 255, 0.06);
     border-radius: 10px;
     padding: 1px 7px;
@@ -80,21 +80,21 @@
 }
 .pe-table th {
     text-align: left;
-    color: var(--muted, #8a93a3);
+    color: var(--muted, var(--ink-2));
     font-weight: 500;
     padding: 4px 10px;
     position: sticky;
     top: 0;
-    background: var(--panel, #12151b);
-    border-bottom: 1px solid var(--border, #333a45);
+    background: var(--panel, var(--surface-1));
+    border-bottom: 1px solid var(--border, var(--line-strong));
 }
 .pe-table td {
     padding: 3px 10px;
-    border-bottom: 1px solid var(--border-soft, #22262f);
+    border-bottom: 1px solid var(--border-soft, var(--line-strong));
 }
 .pe-table .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.pe-table .dim { color: var(--muted, #8a93a3); }
-.pe-table .prot { color: #7ee787; }
+.pe-table .dim { color: var(--muted, var(--ink-2)); }
+.pe-table .prot { color: var(--live); }
 .pe-pin {
     background: transparent;
     border: none;

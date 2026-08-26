@@ -11,9 +11,9 @@
 .diff-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 .diff-input {
-    background: var(--panel-2, #1b1f27);
-    border: 1px solid var(--border, #333a45);
-    color: var(--text, #e6e9ef);
+    background: var(--panel-2, var(--surface-3));
+    border: 1px solid var(--border, var(--line-strong));
+    color: var(--text, var(--ink));
     border-radius: 4px;
     padding: 4px 8px;
     font-size: 12px;
@@ -22,7 +22,7 @@
 .diff-input.diff-size { width: 70px; font-family: ui-monospace, monospace; }
 
 .diff-btn {
-    background: var(--accent, #2b6cff);
+    background: var(--accent);
     color: #fff; border: none; border-radius: 4px;
     padding: 5px 10px; font-size: 12px; cursor: pointer;
 }
@@ -30,20 +30,20 @@
 .diff-btn:disabled { opacity: 0.5; cursor: default; }
 .diff-btn.active { border-color: var(--accent-border); background: var(--accent-bg); color: var(--accent); }
 
-.diff-warn { color: #f5a623; font-size: 11px; }
-.diff-status { font-size: 12px; color: var(--muted, #8a93a3); }
-.diff-empty { color: var(--muted, #8a93a3); font-size: 13px; padding: 16px 8px; text-align: center; }
+.diff-warn { color: var(--warn); font-size: 11px; }
+.diff-status { font-size: 12px; color: var(--muted, var(--ink-2)); }
+.diff-empty { color: var(--muted, var(--ink-2)); font-size: 13px; padding: 16px 8px; text-align: center; }
 
 .diff-table { border-collapse: collapse; width: 100%; font-size: 12px; }
 .diff-table th {
-    text-align: left; color: var(--muted, #8a93a3); font-weight: 500;
-    padding: 4px 10px; border-bottom: 1px solid var(--border, #333a45);
-    position: sticky; top: 0; background: var(--panel, #12151b);
+    text-align: left; color: var(--muted, var(--ink-2)); font-weight: 500;
+    padding: 4px 10px; border-bottom: 1px solid var(--border, var(--line-strong));
+    position: sticky; top: 0; background: var(--panel, var(--surface-1));
 }
-.diff-table td { padding: 3px 10px; border-bottom: 1px solid var(--border-soft, #22262f); }
+.diff-table td { padding: 3px 10px; border-bottom: 1px solid var(--border-soft, var(--line-strong)); }
 .diff-table .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.diff-table .before { color: #8a93a3; }
-.diff-table .after { color: #7ee787; }
+.diff-table .before { color: var(--ink-2); }
+.diff-table .after { color: var(--live); }
 .diff-actions { display: flex; gap: 8px; }
 .diff-pin { background: transparent; border: none; cursor: pointer; font-size: 11px; opacity: 0; padding: 0; }
 .diff-table tr:hover .diff-pin { opacity: 0.6; }

@@ -21,7 +21,7 @@
 }
 
 .pt-final { color: var(--accent); font-weight: 600; }
-.pt-value { color: #7ee787; font-weight: 600; }
+.pt-value { color: var(--live); font-weight: 600; }
 
 .pt-body {
     flex: 1 1 auto;
@@ -29,6 +29,6 @@
     min-height: 0;
 }
 
-.pe-table tr.bad td { color: #ef4444; }
+.pe-table tr.bad td { color: #e46a62; }
 .pe-btn.active { border-color: var(--accent-border); background: var(--accent-bg); color: var(--accent); }
 .pe-btn.sc-primary { border-color: var(--accent-border); background: var(--accent-bg); color: var(--accent); }

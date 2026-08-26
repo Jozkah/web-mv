@@ -1,9 +1,15 @@
-import { createSignal, onCleanup, onMount } from "solid-js";
+import { Show, createSignal, onCleanup, onMount } from "solid-js";
 import { AppProvider } from "./AppContext";
 import { WorkspaceProvider } from "./WorkspaceContext";
-import { TopBar } from "./TopBar";
-import { TargetTabBar } from "./TargetTabBar";
+import { ShellProvider, useShell } from "./shell/ShellContext";
+import { AppBar } from "./shell/AppBar";
+import { ActivityRail } from "./shell/ActivityRail";
+import { ContextualSidebar } from "./shell/ContextualSidebar";
+import { StatusBar } from "./shell/StatusBar";
+import { CommandPalette } from "./shell/CommandPalette";
 import { WorkspaceView } from "./WorkspaceView";
+import { GotoDialog } from "./GotoDialog";
+import { useNavigation } from "./useNavigation";
 import { useMemory } from "../views/memory/state/MemoryContext";
 import { StaticProvider } from "../views/static/state/StaticContext";
 import { MemoryProvider } from "../views/memory/state/MemoryContext";
@@ -15,15 +21,17 @@ import { Window } from "../ui/Window";
 import "../ui/panels.css";
 import "../ui/window.css";
 import "./shell.css";
+import "./nav.css";
 import "../views/static/static.css";
 import "../views/memory/memory.css";
 import "../views/strings/strings.css";
 import "../views/history/history.css";
 import "../scan/scan.css";
 
-// Composition root: Workspace state wraps shared app state and per-view state providers.
-// WorkspaceView renders multi-tabs and split panels, with each view's state preserved.
-// Floating windows (Signature Scan, etc.) remain mounted persistently so inner signals and results stay intact.
+// Composition root. The provider stack (Workspace → App → per-view state → SigMaker → Shell) is
+// unchanged in order and behaviour; ShellProvider is added at the bottom to own the surrounding
+// Signal Workbench chrome (activity rail, contextual sidebar, status bar, command palette). The
+// data/state layers below it keep their exact semantics, so every existing behaviour is preserved.
 
 export default function App() {
     return (
@@ -34,7 +42,9 @@ export default function App() {
                         <StringsProvider>
                             <DataTypesProvider>
                                 <SigMakerProvider>
-                                    <Shell />
+                                    <ShellProvider>
+                                        <Shell />
+                                    </ShellProvider>
                                 </SigMakerProvider>
                             </DataTypesProvider>
                         </StringsProvider>
@@ -46,21 +56,16 @@ export default function App() {
 }
 
 function Shell() {
-    // Persistent state for Signature Scan floating window
-    const [sigScanOpen, setSigScanOpen] = createSignal(false);
+    const shell = useShell();
+    const nav = useNavigation();
+    const memory = useMemory();
+
+    // Persistent state for the Signature Scan floating window (z-order + pin survive close).
     const [sigScanPinned, setSigScanPinned] = createSignal(false);
     const [winZIndex, setWinZIndex] = createSignal(100);
 
-    const toggleSigScan = () => {
-        setSigScanOpen((cur) => !cur);
-        if (!sigScanOpen()) {
-            setWinZIndex((z) => z + 1);
-        }
-    };
-
     // Global undo/redo for the memory workspace: Ctrl+Z undo, Ctrl+Shift+Z / Ctrl+Y redo. Ignored
     // while typing into a field so it never clobbers native text editing (Cmd for macOS parity).
-    const memory = useMemory();
     onMount(() => {
         const onKey = (e: KeyboardEvent) => {
             const t = e.target as HTMLElement | null;
@@ -80,31 +85,52 @@ function Shell() {
     });
 
     return (
-        <main class="app">
-            <TopBar sigScanOpen={sigScanOpen()} onToggleSigScan={toggleSigScan} />
-            <TargetTabBar />
-            <div class="view-host">
-                <div class="view-content">
-                    <WorkspaceView />
-                </div>
+        <div class="wb" classList={{ zen: shell.zen() }}>
+            <AppBar />
 
-                <Window
-                    id="sigscan-window"
-                    title="🎯 Signature scan"
-                    isOpen={sigScanOpen()}
-                    onClose={() => setSigScanOpen(false)}
-                    isPinned={sigScanPinned()}
-                    onTogglePin={() => setSigScanPinned((p) => !p)}
-                    initialPos={{ x: 100, y: 70 }}
-                    initialSize={{ width: 500, height: 540 }}
-                    minWidth={380}
-                    minHeight={260}
-                    zIndex={winZIndex()}
-                    onFocus={() => setWinZIndex((z) => Math.max(z, 101))}
-                >
-                    <ScanCard kind="sig" onClose={() => setSigScanOpen(false)} />
-                </Window>
+            <div class="wb-body">
+                <Show when={!shell.zen()}>
+                    <ActivityRail />
+                </Show>
+                <Show when={!shell.zen() && shell.sidebarOpen()}>
+                    <ContextualSidebar />
+                </Show>
+
+                <div class="wb-center">
+                    <WorkspaceView />
+
+                    <Window
+                        id="sigscan-window"
+                        title="Signature scan"
+                        isOpen={shell.sigScanOpen()}
+                        onClose={() => shell.setSigScanOpen(false)}
+                        isPinned={sigScanPinned()}
+                        onTogglePin={() => setSigScanPinned((p) => !p)}
+                        initialPos={{ x: 120, y: 84 }}
+                        initialSize={{ width: 500, height: 540 }}
+                        minWidth={380}
+                        minHeight={260}
+                        zIndex={winZIndex()}
+                        onFocus={() => setWinZIndex((z) => Math.max(z, 101))}
+                    >
+                        <ScanCard kind="sig" onClose={() => shell.setSigScanOpen(false)} />
+                    </Window>
+                </div>
             </div>
-        </main>
+
+            <Show when={!shell.zen()}>
+                <StatusBar />
+            </Show>
+
+            <Show when={shell.paletteOpen()}>
+                <CommandPalette />
+            </Show>
+            <Show when={shell.gotoOpen()}>
+                <GotoDialog
+                    onClose={() => shell.closeGoto()}
+                    onGo={(kind, address, label) => nav.goto(kind, address, label)}
+                />
+            </Show>
+        </div>
     );
 }

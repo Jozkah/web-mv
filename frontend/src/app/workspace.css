@@ -3,9 +3,9 @@
    appears when a tab is explicitly sent "to the side". */
 
 .workspace {
-    --tabbar-h: 40px;
-    --tab-h: 34px;
-    --tab-radius: 7px;
+    --tabbar-h: 38px;
+    --tab-h: 32px;
+    --tab-radius: var(--radius);
 
     display: flex;
     flex-direction: row;
@@ -53,6 +53,19 @@
     width: 100%;
     overflow: hidden;
 }
+/* Views remount on tab switch (keyed on tab id), so this fades each page in and
+   makes switching read as one seamless surface rather than a hard swap. */
+.ws-viewport > * {
+    animation: view-in 0.14s ease-out;
+}
+@keyframes view-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
 
 /* Tab strip ---------------------------------------------------------------- */
 
@@ -63,7 +76,7 @@
     gap: 4px;
     height: var(--tabbar-h);
     padding: 0 6px;
-    background: var(--code-bg);
+    background: var(--bg-shell);
     border-bottom: 1px solid var(--border);
     flex: 0 0 auto;
     user-select: none;
@@ -254,10 +267,10 @@
     gap: 1px;
     min-width: 180px;
     padding: 5px;
-    background: var(--bg);
+    background: var(--bg-deep);
     border: 1px solid var(--border);
-    border-radius: 9px;
-    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    box-shadow: 0 0 0 1px var(--surface-0), var(--shadow);
     font-family: var(--sans);
     transform-origin: top right;
     animation: ws-menu-in 0.12s ease-out;
@@ -416,9 +429,9 @@
     font-family: var(--heading);
     font-size: 13px;
     color: var(--text-h);
-    background: var(--code-bg);
+    background: var(--btn-bg);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius);
     cursor: pointer;
     transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }

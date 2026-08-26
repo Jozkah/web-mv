@@ -11,8 +11,8 @@ import "./xref.css";
 
 export function StaticView() {
     return (
-        <div class="workspace">
-            <div class="rail">
+        <div class="sv-workspace">
+            <div class="sv-rail">
                 <ModulesList />
                 <PinnedList />
             </div>
