@@ -14,7 +14,7 @@ import type { ViewId } from "./AppContext";
 // appears when the user explicitly sends a tab "to the side". Each group owns its own ordered
 // tab list and its own active tab - a tab belongs to exactly one group, never rendered twice.
 
-export type TabKind = ViewId | "sigscan" | "analysis" | "cheat" | "pe" | "bookmarks" | "diff" | "hex" | "regions" | "scanner" | "pointer";
+export type TabKind = ViewId | "sigscan" | "analysis" | "cheat" | "pe" | "bookmarks" | "diff" | "hex" | "regions" | "scanner" | "pointer" | "timeline" | "watch" | "emulator" | "patch" | "project" | "decompiler" | "network" | "debugger" | "hooklab";
 
 export interface TabItem {
     id: string;
@@ -29,6 +29,9 @@ export interface TabGroup {
     id: string;
     tabs: TabItem[];
     activeTabId: string | null;
+    /** Proportional flex-grow weight for side-by-side layout. Absent (legacy) means 1 - every
+     *  group equal, exactly as before this field existed. Only the ratio between groups matters. */
+    sizeWeight?: number;
 }
 
 interface WorkspaceStore {
@@ -56,6 +59,15 @@ const SINGLETON_KINDS: ReadonlySet<TabKind> = new Set<TabKind>([
     "regions",
     "scanner",
     "pointer",
+    "timeline",
+    "watch",
+    "emulator",
+    "patch",
+    "project",
+    "decompiler",
+    "network",
+    "debugger",
+    "hooklab",
 ]);
 
 const DEFAULT_KIND_TITLE: Record<TabKind, string> = {
@@ -74,6 +86,15 @@ const DEFAULT_KIND_TITLE: Record<TabKind, string> = {
     regions: "Memory Map",
     scanner: "Value Scanner",
     pointer: "Pointer Chain",
+    timeline: "Timeline",
+    watch: "Memory Watch",
+    emulator: "Emulator",
+    patch: "Patches",
+    project: "Project",
+    decompiler: "Decompiler",
+    network: "Network",
+    debugger: "Debugger",
+    hooklab: "Hook Lab",
 };
 
 export function defaultTabTitle(kind: TabKind): string {
@@ -134,7 +155,11 @@ function sanitizeGroup(raw: unknown): TabGroup | undefined {
     const activeTabId = tabs.some((t) => t.id === g.activeTabId)
         ? (g.activeTabId as string)
         : tabs[0].id;
-    return { id: g.id, tabs, activeTabId };
+    const sizeWeight =
+        typeof g.sizeWeight === "number" && isFinite(g.sizeWeight) && g.sizeWeight > 0
+            ? g.sizeWeight
+            : undefined;
+    return { id: g.id, tabs, activeTabId, sizeWeight };
 }
 
 function migrateV1(data: LegacyV1): WorkspaceStore | undefined {
@@ -204,8 +229,17 @@ function createWorkspaceState() {
         });
     };
 
+    // Deep-read every field so the persist effect tracks nested leaves (a group's tabs, title,
+    // activeTabId, sizeWeight). Reading only `store.groups` would subscribe to the array slot
+    // alone, and a `produce` that mutates a nested property - reorder, rename, resize - would not
+    // re-run this snapshot, so the change would never be written.
     persist(STORAGE_KEY, STORAGE_VERSION, () => ({
-        groups: store.groups,
+        groups: store.groups.map((g) => ({
+            id: g.id,
+            tabs: g.tabs.map((t) => ({ id: t.id, kind: t.kind, title: t.title, classId: t.classId })),
+            activeTabId: g.activeTabId,
+            sizeWeight: g.sizeWeight,
+        })),
         activeGroupId: store.activeGroupId,
     }));
 
@@ -344,6 +378,22 @@ function createWorkspaceState() {
             const last = stack[stack.length - 1];
             setClosedStack(stack.slice(0, -1));
             this.addTab(last.kind, { title: last.title, classId: last.classId });
+        },
+
+        // Commit new proportional weights for an adjacent pair after a divider drag. Only the two
+        // groups touched change; every other group keeps its weight, so their pixel widths hold.
+        // Values are stored raw (they are flex-grow numbers) - only the ratio between them matters.
+        resizeGroups(leftId: string, rightId: string, leftWeight: number, rightWeight: number) {
+            if (!(leftWeight > 0) || !(rightWeight > 0)) return;
+            setStore(
+                produce((s) => {
+                    const l = s.groups.find((g) => g.id === leftId);
+                    const r = s.groups.find((g) => g.id === rightId);
+                    if (!l || !r) return;
+                    l.sizeWeight = leftWeight;
+                    r.sizeWeight = rightWeight;
+                }),
+            );
         },
 
         // Reorder a tab within its group from one index to another (drag-to-reorder).

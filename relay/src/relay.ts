@@ -37,6 +37,10 @@ const EXT_VERBS = new Set<string>([
     "pe_header",
     "pe_dirs",
     "resource_tree",
+    // Unicorn emulator verb family (create/run/step/registers/memory/reset/close).
+    "emulate",
+    // Capability handshake: the ext agent is the source of truth for which verbs it implements.
+    "capabilities",
 ]);
 
 function frameType(message: string | Buffer): string | undefined {

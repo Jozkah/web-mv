@@ -1,0 +1,36 @@
+.patch-view { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; min-width: 0; }
+.patch-toolbar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.patch-input { flex: 1 1 200px; min-width: 150px; padding: 5px 8px; background: var(--surface-inset, var(--surface)); border: 1px solid var(--line); border-radius: var(--r); color: var(--ink); font-size: var(--fs-ui); }
+.patch-bytes { font-family: var(--mono); }
+.patch-field { font-size: var(--fs-micro); color: var(--ink-3); display: inline-flex; align-items: center; gap: 3px; }
+.patch-num { width: 54px; padding: 3px 5px; background: var(--surface-inset, var(--surface)); border: 1px solid var(--line); border-radius: var(--r); color: var(--ink); font-family: var(--mono); font-size: var(--fs-micro); }
+.patch-btn { padding: 4px 10px; background: var(--surface-inset, var(--surface)); border: 1px solid var(--line); border-radius: var(--r); color: var(--ink-2); font-size: var(--fs-ui); cursor: pointer; white-space: nowrap; }
+.patch-btn:hover:not(:disabled) { color: var(--ink); }
+.patch-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.patch-btn.sm { padding: 2px 7px; font-size: var(--fs-micro); }
+.patch-btn.danger:hover { color: var(--danger); border-color: var(--danger); }
+.patch-spacer { flex: 1 1 auto; }
+.patch-avail { font-size: var(--fs-micro); font-weight: 700; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); }
+.patch-avail.tone-live { color: var(--live); border-color: var(--live); }
+.patch-avail.tone-warn { color: var(--warn); border-color: var(--warn); }
+.patch-avail.tone-danger { color: var(--danger); border-color: var(--danger); }
+.patch-banner { padding: 6px 12px; font-size: var(--fs-ui); color: var(--warn); background: var(--surface-inset, var(--surface)); border-bottom: 1px solid var(--line-soft, var(--line)); }
+.patch-banner.danger { color: var(--danger); }
+.patch-table { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.patch-thead, .patch-row { display: grid; grid-template-columns: 26px minmax(90px,1.1fr) minmax(110px,1.2fr) minmax(90px,1fr) minmax(110px,1.3fr) minmax(100px,0.9fr) 120px; gap: 6px; padding: 0 12px; align-items: center; }
+.patch-thead { height: 26px; border-bottom: 1px solid var(--line); font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); font-weight: 700; }
+.patch-tbody { overflow-y: auto; min-height: 0; flex: 1 1 auto; }
+.patch-empty { padding: 24px; color: var(--ink-3); text-align: center; font-size: var(--fs-ui); }
+.patch-row { min-height: 30px; border-bottom: 1px solid var(--line-soft, var(--line)); font-size: var(--fs-ui); }
+.patch-row.applied { background: var(--surface-active, rgba(105,165,200,0.10)); }
+.patch-row.stale { opacity: 0.65; }
+.patch-row.conflict { box-shadow: inset 2px 0 0 var(--warn); }
+.patch-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.patch-mono, .patch-addr { font-family: var(--mono); font-size: var(--fs-micro); }
+.patch-addr { color: var(--accent, var(--live)); }
+.patch-diff { color: var(--ink-3); }
+.patch-status { font-size: var(--fs-micro); color: var(--ink-2); }
+.patch-warn { color: var(--warn); }
+.dim { color: var(--ink-3); }
+.patch-actions { display: flex; gap: 4px; }
+.patch-note { margin: 10px 12px; padding-top: 8px; border-top: 1px solid var(--line-soft, var(--line)); font-size: var(--fs-micro); color: var(--ink-3); line-height: 1.5; }

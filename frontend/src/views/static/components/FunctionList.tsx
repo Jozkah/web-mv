@@ -9,7 +9,6 @@ import { RenameInput } from "../../../ui/RenameInput";
 import { StatusOverlay } from "../../../ui/StatusOverlay";
 import { createListVirtualizer } from "../../../ui/virtualList";
 import { resolveFunctionHits, type FunctionSigHit } from "../../../scan/functionSigSearch";
-import { useSigMaker } from "../sigmaker/SigMakerContext";
 
 const ROW_HEIGHT = 28;
 
@@ -34,10 +33,9 @@ type SearchMode = "text" | "sig";
 // Supports both standard substring/address searching and IDA-style Signature Search (sigsearch)
 // to locate containing functions matching a byte pattern or function prologue.
 
-export function FunctionList() {
+export function FunctionList(props: { width?: number }) {
     const { client, attached, modules, annotations } = useApp();
     const { functions, selection, selectFunction } = useStatic();
-    const sigMaker = useSigMaker();
 
     const moduleName = () => selection.selectedModule();
     const entry = () => {
@@ -230,16 +228,19 @@ export function FunctionList() {
         setEditing(null);
     };
 
-    const launchSigMaker = (module: string, fn: { address: string; size: number; rva: string }) => {
-        const name = annotations.nameOf(module, fn.rva);
-        sigMaker.open({ moduleName: module, functionName: name, address: fn.address, size: fn.size, source: "code" });
-    };
-
     return (
         <>
             <Panel
                 class="panel-functions"
-                style={contentWidth() ? { flex: "0 0 auto", width: contentWidth() } : undefined}
+                style={
+                    // A user-dragged width (props.width) wins over the content-derived width, so the
+                    // pane holds where the divider left it. Falls back to auto-sizing until dragged.
+                    props.width !== undefined
+                        ? { flex: "0 0 auto", width: `${props.width}px` }
+                        : contentWidth()
+                          ? { flex: "0 0 auto", width: contentWidth() }
+                          : undefined
+                }
                 title="functions"
                 meta={
                     <Show when={moduleName()} fallback="none">
@@ -253,17 +254,6 @@ export function FunctionList() {
                 }
                 actions={
                     <div style={{ display: "flex", gap: "4px" }}>
-                        <Show when={selection.selectedFunction()}>
-                            {(sel) => (
-                                <button
-                                    onClick={() => launchSigMaker(sel().module, sel())}
-                                    title="Open SigMaker for selected function"
-                                    style={{ font: "inherit", "font-size": "12px", cursor: "pointer", padding: "2px 6px" }}
-                                >
-                                    ⚡ sigmaker
-                                </button>
-                            )}
-                        </Show>
                         <button
                             onClick={() => {
                                 const m = moduleName();

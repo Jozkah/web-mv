@@ -4,6 +4,7 @@ import { useNavigation } from "../../app/useNavigation";
 import { regions as fetchRegions } from "../../protocol/requests";
 import { resolveLabel } from "../../state/labels";
 import { errorText } from "../../state/errors";
+import { ModulePicker } from "../../scan/ModulePicker";
 import type { RegionEntry } from "../../protocol/types";
 import "../pe/pe.css";
 import "./regions.css";
@@ -82,10 +83,7 @@ export function RegionsView() {
     return (
         <div class="pe-view">
             <div class="pe-toolbar">
-                <select class="pe-input" value={selected()} onChange={(e) => setSelected(e.currentTarget.value)}>
-                    <option value="">(whole address space)</option>
-                    <For each={modules.list()}>{(m) => <option value={m.name}>{m.name}</option>}</For>
-                </select>
+                <ModulePicker value={selected()} onChange={setSelected} emptyLabel="(whole address space)" />
                 <button class="pe-btn" onClick={load} disabled={!attached() || loading()}>
                     {loading() ? "…" : "↻ Map"}
                 </button>

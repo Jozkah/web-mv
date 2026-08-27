@@ -11,7 +11,7 @@
 //
 // Everything here uses only documented Angel host calls (process::write_bytes / read_uint64 /
 // read_uint32 / read_float / read_string / read_buffer / dump, ws::*, and the standard
-// AngelScript string addon). Confirmed-SAFE scalar/array types only — see repo CLAUDE notes:
+// AngelScript string addon). Confirmed-SAFE scalar/array types only:
 // float, int, uint, uint32, uint16, uint8, uint64, bool, array<uint64>, array<float>,
 // memory_buffer@. NO dictionary type; scan state lives in parallel global arrays.
 //
@@ -22,6 +22,25 @@
 
 const string PROCESS_NAME = "HuntGame.exe";                // Target process (match your core script)
 const string EXT_RELAY_URL = "ws://127.0.0.1:9000/agent-ext";
+
+// Capability-handshake protocol version. Bump when the verb set or reply shapes change in a way
+// the frontend must notice. The frontend compares against CAPABILITY_PROTOCOL_VERSION.
+// v2 adds the `emulate` verb family (Unicorn emulator).
+const int EXT_PROTOCOL_VERSION = 2;
+
+// --- Emulator (Unicorn) limits -------------------------------------------------
+// Conservative bounds so a single emulate op can never hang the ws handler or allocate unbounded.
+const uint64 EMU_INSN_BUDGET_DEFAULT = 100000;      // instructions per run if unspecified
+const uint64 EMU_INSN_BUDGET_MAX     = 5000000;     // hard cap on instructions per run
+const uint64 EMU_TIMEOUT_US_DEFAULT  = 1000000;     // 1s per run if unspecified
+const uint64 EMU_TIMEOUT_US_MAX      = 5000000;     // 5s hard cap
+const uint   EMU_TRACE_LIMIT_DEFAULT = 10000;
+const uint   EMU_TRACE_LIMIT_MAX     = 200000;
+const uint64 EMU_STACK_SIZE_DEFAULT  = 0x10000;     // 64 KiB
+const uint64 EMU_STACK_SIZE_MAX      = 0x100000;    // 1 MiB
+const uint   EMU_MEM_READ_MAX        = 0x10000;     // 64 KiB per emulator memory read
+const uint   EMU_MEM_WRITE_MAX       = 0x10000;     // 64 KiB per emulator memory write
+const uint   EMU_BREAKPOINT_MAX      = 256;
 
 // Bound the PE-table walks so a corrupt header can never spin us forever.
 const uint MAX_EXPORT_NAMES = 50000;
@@ -1169,6 +1188,452 @@ void handle_raw_scan(const string &in frame, const string &in id)
              ",\"count\":" + count + ",\"results\":[" + rows + "]}");
 }
 
+// --- Unicorn emulator (offline / process-backed emulation) --------------------
+// Offline x86-64 emulation via Angel's documented uc:: API. This is an EMULATOR, never a debugger:
+// uc::create_process() demand-loads pages from the attached process, but all subsequent state lives
+// in Unicorn and the target process is never modified. Execution is always bounded — uc::start()
+// takes an instruction count AND a microsecond timeout, and the code hook returns false to stop —
+// so Run/Step can never run away. One session at a time; a new session closes the previous handle.
+
+uint64 g_emu = 0;                 // current Unicorn handle (0 = none)
+string g_emu_session = "";        // opaque session id assigned by the frontend
+int    g_emu_gen = -1;            // target generation captured at create (frontend supplies it)
+string g_emu_mode = "";           // "process" | "standalone"
+uint64 g_emu_entry = 0;           // configured entry address
+uint64 g_emu_stop = 0;            // configured stop address (0 = none)
+uint64 g_emu_stack_base = 0;
+uint64 g_emu_stack_size = 0;
+uint64 g_emu_rip = 0;             // last observed rip (updated by the hook)
+uint64 g_emu_insn_total = 0;      // instructions executed across this session's runs
+string g_emu_status = "closed";   // idle|creating|ready|running|completed|faulted|closed
+bool   g_emu_hook_installed = false;
+
+// Stored create config so reset() can rebuild the exact initial state.
+array<string> g_emu_init_reg_names;
+array<uint64> g_emu_init_reg_vals;
+array<uint64> g_emu_breakpoints;
+bool   g_emu_trace_on = true;
+bool   g_emu_bytes_on = true;
+
+// Per-run trace buffers (bounded; filled by the hook, serialized after uc::start returns).
+array<uint64> g_tr_addr;
+array<uint>   g_tr_size;
+array<string> g_tr_bytes;
+uint   g_tr_limit = EMU_TRACE_LIMIT_DEFAULT;
+uint   g_tr_dropped = 0;
+uint64 g_run_budget = 0;
+uint64 g_run_count = 0;
+bool   g_hit_bp = false;
+uint64 g_bp_addr = 0;
+
+string emu_bytes_hex(const array<uint8> &in b)
+{
+    const string digits = "0123456789abcdef";
+    string s = "";
+    for (uint i = 0; i < b.length(); i++)
+    {
+        uint8 c = b[i];
+        s += digits.substr((c >> 4) & 0xF, 1);
+        s += digits.substr(c & 0xF, 1);
+    }
+    return s;
+}
+
+// Split a comma-separated string into tokens (empty input -> empty array). Used for the flat reg /
+// breakpoint / mapping encodings so we never depend on a nested-JSON parser this host lacks.
+array<string> emu_split(const string &in s)
+{
+    array<string> out;
+    if (s.length() == 0) return out;
+    int start = 0;
+    for (uint i = 0; i <= s.length(); i++)
+    {
+        if (i == s.length() || s[i] == 0x2C) // ','
+        {
+            if (int(i) > start) out.insertLast(s.substr(start, int(i) - start));
+            start = int(i) + 1;
+        }
+    }
+    return out;
+}
+
+// Map a register name to its x86_reg enum. Returns false for unknown / unsupported names (SIMD /
+// segment / control registers are deliberately NOT exposed this phase).
+bool emu_reg(const string &in n, x86_reg &out r)
+{
+    if (n == "rax") { r = x86_reg::rax; return true; }
+    if (n == "rbx") { r = x86_reg::rbx; return true; }
+    if (n == "rcx") { r = x86_reg::rcx; return true; }
+    if (n == "rdx") { r = x86_reg::rdx; return true; }
+    if (n == "rsi") { r = x86_reg::rsi; return true; }
+    if (n == "rdi") { r = x86_reg::rdi; return true; }
+    if (n == "rbp") { r = x86_reg::rbp; return true; }
+    if (n == "rsp") { r = x86_reg::rsp; return true; }
+    if (n == "rip") { r = x86_reg::rip; return true; }
+    if (n == "eflags") { r = x86_reg::eflags; return true; }
+    if (n == "r8")  { r = x86_reg::r8;  return true; }
+    if (n == "r9")  { r = x86_reg::r9;  return true; }
+    if (n == "r10") { r = x86_reg::r10; return true; }
+    if (n == "r11") { r = x86_reg::r11; return true; }
+    if (n == "r12") { r = x86_reg::r12; return true; }
+    if (n == "r13") { r = x86_reg::r13; return true; }
+    if (n == "r14") { r = x86_reg::r14; return true; }
+    if (n == "r15") { r = x86_reg::r15; return true; }
+    return false;
+}
+
+array<string> emu_reg_names()
+{
+    array<string> n = { "rax","rbx","rcx","rdx","rsi","rdi","rbp","rsp","rip","eflags",
+                        "r8","r9","r10","r11","r12","r13","r14","r15" };
+    return n;
+}
+
+// Serialize all supported registers as a JSON object of name -> hex string.
+string emu_registers_json()
+{
+    array<string> names = emu_reg_names();
+    string out = "";
+    for (uint i = 0; i < names.length(); i++)
+    {
+        x86_reg r;
+        if (!emu_reg(names[i], r)) continue;
+        uint64 v = 0;
+        uc::reg_read64(g_emu, r, v);
+        if (out.length() > 0) out += ",";
+        out += "\"" + names[i] + "\":\"" + hex_addr(v) + "\"";
+    }
+    return "{" + out + "}";
+}
+
+// The code hook: fires per emulated instruction. Records a bounded trace, enforces the instruction
+// budget, and stops at an emulation breakpoint. Returning false halts uc::start deterministically.
+bool on_emu_code(uint64 h, uint64 address, uint32 size)
+{
+    g_emu_rip = address;
+
+    // Emulation breakpoint — skip the very first instruction of a run so a paused-on-breakpoint
+    // session can resume past it.
+    if (g_run_count > 0)
+    {
+        for (uint i = 0; i < g_emu_breakpoints.length(); i++)
+        {
+            if (g_emu_breakpoints[i] == address) { g_hit_bp = true; g_bp_addr = address; return false; }
+        }
+    }
+
+    if (g_emu_trace_on)
+    {
+        if (g_tr_addr.length() < g_tr_limit)
+        {
+            g_tr_addr.insertLast(address);
+            g_tr_size.insertLast(size);
+            if (g_emu_bytes_on)
+            {
+                array<uint8> b;
+                if (uc::mem_read(h, address, size, b)) g_tr_bytes.insertLast(emu_bytes_hex(b));
+                else g_tr_bytes.insertLast("");
+            }
+        }
+        else g_tr_dropped++;
+    }
+
+    g_run_count++;
+    if (g_run_budget > 0 && g_run_count >= g_run_budget) return false; // instruction limit
+    return true;
+}
+
+void emu_close_handle()
+{
+    if (g_emu != 0) { uc::close(g_emu); g_emu = 0; }
+    g_emu_hook_installed = false;
+    g_emu_status = "closed";
+}
+
+// Build the initial emulator state from the stored config: map stack, install the hook, apply the
+// initial register values. `mode` selects create() vs create_process().
+bool emu_build(const string &in id, int gen)
+{
+    emu_close_handle();
+    g_emu = (g_emu_mode == "process") ? uc::create_process() : uc::create();
+    if (g_emu == 0) return false;
+
+    if (g_emu_stack_size > 0)
+        uc::setup_stack(g_emu, g_emu_stack_base, g_emu_stack_size, g_emu_stop);
+
+    if (uc::hook_code(g_emu, @on_emu_code)) g_emu_hook_installed = true;
+
+    for (uint i = 0; i < g_emu_init_reg_names.length(); i++)
+    {
+        x86_reg r;
+        if (emu_reg(g_emu_init_reg_names[i], r)) uc::reg_write64(g_emu, r, g_emu_init_reg_vals[i]);
+    }
+    // Seed rip so status/step start from the configured entry.
+    uc::reg_write64(g_emu, x86_reg::rip, g_emu_entry);
+    g_emu_rip = g_emu_entry;
+    g_emu_session = id;
+    g_emu_gen = gen;
+    g_emu_status = "ready";
+    return true;
+}
+
+void emu_send_error(const string &in id, int code, const string &in message)
+{
+    send_error(id, code, message);
+}
+
+// Reject an op whose session id or generation does not match the live session.
+bool emu_session_ok(const string &in frame)
+{
+    if (g_emu == 0) return false;
+    string sid = json_str(frame, "session", "");
+    if (sid != g_emu_session) return false;
+    if (json_has(frame, "generation") && int(json_num(frame, "generation", 0)) != g_emu_gen) return false;
+    return true;
+}
+
+void handle_emu_create(const string &in frame, const string &in id)
+{
+    if (!ensure_attached()) { emu_send_error(id, 1001, "not attached"); return; }
+    string sid = json_str(frame, "session", "");
+    if (sid == "") { emu_send_error(id, 2001, "session id required"); return; }
+    int gen = int(json_num(frame, "generation", 0));
+
+    g_emu_mode = json_str(frame, "mode", "process");
+    if (g_emu_mode != "process" && g_emu_mode != "standalone") g_emu_mode = "process";
+    g_emu_entry = parse_u64_hex(json_str(frame, "entry", "0x0"));
+    g_emu_stop = parse_u64_hex(json_str(frame, "stop", "0x0"));
+    g_emu_stack_base = parse_u64_hex(json_str(frame, "stack_base", "0x0"));
+    g_emu_stack_size = json_num(frame, "stack_size", EMU_STACK_SIZE_DEFAULT);
+    if (g_emu_stack_size > EMU_STACK_SIZE_MAX) g_emu_stack_size = EMU_STACK_SIZE_MAX;
+    g_emu_trace_on = json_num(frame, "trace", 1) != 0;
+    g_emu_bytes_on = json_num(frame, "trace_bytes", 1) != 0;
+
+    // Initial registers (flat CSV encodings so we avoid nested-JSON parsing).
+    g_emu_init_reg_names = emu_split(json_str(frame, "reg_names", ""));
+    array<string> rvals = emu_split(json_str(frame, "reg_values", ""));
+    g_emu_init_reg_vals.resize(0);
+    for (uint i = 0; i < g_emu_init_reg_names.length() && i < rvals.length(); i++)
+        g_emu_init_reg_vals.insertLast(parse_u64_hex(rvals[i]));
+
+    g_emu_breakpoints.resize(0);
+    array<string> bps = emu_split(json_str(frame, "breakpoints", ""));
+    for (uint i = 0; i < bps.length() && i < EMU_BREAKPOINT_MAX; i++)
+        g_emu_breakpoints.insertLast(parse_u64_hex(bps[i]));
+
+    g_emu_status = "creating";
+    if (!emu_build(sid, gen)) { emu_send_error(id, 2002, "emulator creation failed"); return; }
+    g_emu_insn_total = 0;
+
+    ws::send("{\"type\":\"emulate_result\",\"id\":" + id +
+             ",\"op\":\"create\",\"success\":true,\"session\":\"" + json_escape(sid) +
+             "\",\"mode\":\"" + g_emu_mode + "\",\"status\":\"" + g_emu_status +
+             "\",\"rip\":\"" + hex_addr(g_emu_rip) +
+             "\",\"registers\":" + emu_registers_json() + "}");
+}
+
+void emu_send_status(const string &in id, const string &in op)
+{
+    ws::send("{\"type\":\"emulate_result\",\"id\":" + id +
+             ",\"op\":\"" + op + "\",\"success\":true,\"session\":\"" + json_escape(g_emu_session) +
+             "\",\"status\":\"" + g_emu_status +
+             "\",\"rip\":\"" + hex_addr(g_emu_rip) +
+             "\",\"instruction_total\":" + dec_u64(g_emu_insn_total) +
+             ",\"registers\":" + emu_registers_json() + "}");
+}
+
+// Serialize the current run's trace as a bounded JSON array.
+string emu_trace_json()
+{
+    string rows = "";
+    for (uint i = 0; i < g_tr_addr.length(); i++)
+    {
+        if (i > 0) rows += ",";
+        rows += "{\"index\":" + i + ",\"address\":\"" + hex_addr(g_tr_addr[i]) +
+                "\",\"size\":" + g_tr_size[i];
+        if (g_emu_bytes_on && i < g_tr_bytes.length())
+            rows += ",\"bytes\":\"" + g_tr_bytes[i] + "\"";
+        rows += "}";
+    }
+    return "[" + rows + "]";
+}
+
+// Map a uc::error code + run bookkeeping to a stop reason string.
+string emu_stop_reason(int result, uint64 timeout_us, uint64 duration_us)
+{
+    if (g_hit_bp) return "breakpoint";
+    if (result != uc::error::ok)
+    {
+        if (result == uc::error::read_unmapped) return "unmapped_read";
+        if (result == uc::error::write_unmapped) return "unmapped_write";
+        if (result == uc::error::fetch_unmapped) return "unmapped_fetch";
+        if (result == uc::error::read_prot) return "protection_read";
+        if (result == uc::error::write_prot) return "protection_write";
+        if (result == uc::error::fetch_prot) return "protection_fetch";
+        if (result == uc::error::insn_invalid) return "invalid_instruction";
+        return "unicorn_error";
+    }
+    if (g_run_budget > 0 && g_run_count >= g_run_budget) return "instruction_limit";
+    if (timeout_us > 0 && duration_us >= timeout_us) return "timeout";
+    return "stop_reached";
+}
+
+void emu_run(const string &in frame, const string &in id, bool single_step)
+{
+    if (!emu_session_ok(frame)) { emu_send_error(id, 2003, "invalid or stale session"); return; }
+
+    uint64 budget = single_step ? 1 : json_num(frame, "insn_budget", EMU_INSN_BUDGET_DEFAULT);
+    if (budget == 0 || budget > EMU_INSN_BUDGET_MAX) budget = single_step ? 1 : EMU_INSN_BUDGET_MAX;
+    uint64 timeout_us = single_step ? 0 : json_num(frame, "timeout_us", EMU_TIMEOUT_US_DEFAULT);
+    if (timeout_us > EMU_TIMEOUT_US_MAX) timeout_us = EMU_TIMEOUT_US_MAX;
+    g_tr_limit = uint(json_num(frame, "trace_limit", EMU_TRACE_LIMIT_DEFAULT));
+    if (g_tr_limit > EMU_TRACE_LIMIT_MAX) g_tr_limit = EMU_TRACE_LIMIT_MAX;
+
+    uint64 stop = json_has(frame, "stop") ? parse_u64_hex(json_str(frame, "stop", "0x0")) : g_emu_stop;
+
+    // Reset per-run state.
+    g_tr_addr.resize(0); g_tr_size.resize(0); g_tr_bytes.resize(0);
+    g_tr_dropped = 0; g_run_count = 0; g_run_budget = budget; g_hit_bp = false; g_bp_addr = 0;
+
+    uint64 begin = g_emu_rip;
+    g_emu_status = "running";
+    uint64 t0 = util::time_now();
+    int result = uc::start(g_emu, begin, stop, timeout_us, budget);
+    uint64 t1 = util::time_now();
+    double dur_us = util::time_us(t0, t1);
+
+    // Current rip after the run.
+    uint64 rip_after = 0;
+    uc::reg_read64(g_emu, x86_reg::rip, rip_after);
+    g_emu_rip = rip_after;
+    g_emu_insn_total += g_run_count;
+
+    string reason = emu_stop_reason(result, timeout_us, uint64(dur_us));
+    uint32 last_err = uc::last_error(g_emu);
+    uint64 fault = uc::fault_address(g_emu);
+    bool faulted = (result != uc::error::ok) && !g_hit_bp;
+    g_emu_status = faulted ? "faulted" : (g_hit_bp || reason == "instruction_limit" || reason == "timeout") ? "paused" : "completed";
+
+    ws::send("{\"type\":\"emulate_result\",\"id\":" + id +
+             ",\"op\":\"" + (single_step ? "step" : "run") +
+             "\",\"success\":true,\"session\":\"" + json_escape(g_emu_session) +
+             "\",\"status\":\"" + g_emu_status +
+             "\",\"stop_reason\":\"" + reason +
+             "\",\"rip\":\"" + hex_addr(g_emu_rip) +
+             "\",\"instruction_count\":" + dec_u64(g_run_count) +
+             ",\"instruction_total\":" + dec_u64(g_emu_insn_total) +
+             ",\"trace_count\":" + g_tr_addr.length() +
+             ",\"trace_dropped\":" + g_tr_dropped +
+             ",\"unicorn_error\":" + last_err +
+             ",\"fault_address\":\"" + hex_addr(fault) +
+             "\",\"duration_us\":" + dec_u64(uint64(dur_us)) +
+             ",\"breakpoint\":\"" + hex_addr(g_bp_addr) +
+             "\",\"registers\":" + emu_registers_json() +
+             ",\"trace\":" + emu_trace_json() + "}");
+}
+
+void handle_emu_read_registers(const string &in frame, const string &in id)
+{
+    if (!emu_session_ok(frame)) { emu_send_error(id, 2003, "invalid or stale session"); return; }
+    emu_send_status(id, "read_registers");
+}
+
+void handle_emu_write_register(const string &in frame, const string &in id)
+{
+    if (!emu_session_ok(frame)) { emu_send_error(id, 2003, "invalid or stale session"); return; }
+    if (g_emu_status == "running") { emu_send_error(id, 2010, "cannot edit registers while running"); return; }
+    string name = json_str(frame, "reg", "");
+    x86_reg r;
+    if (!emu_reg(name, r)) { emu_send_error(id, 2004, "unknown register: " + name); return; }
+    uint64 v = parse_u64_hex(json_str(frame, "value", "0x0"));
+    uc::reg_write64(g_emu, r, v);
+    if (name == "rip") g_emu_rip = v;
+    emu_send_status(id, "write_register");
+}
+
+void handle_emu_read_memory(const string &in frame, const string &in id)
+{
+    if (!emu_session_ok(frame)) { emu_send_error(id, 2003, "invalid or stale session"); return; }
+    uint64 addr = parse_u64_hex(json_str(frame, "address", "0x0"));
+    uint size = uint(json_num(frame, "size", 0));
+    if (size == 0 || size > EMU_MEM_READ_MAX) { emu_send_error(id, 2005, "size out of range"); return; }
+    array<uint8> b;
+    bool ok = uc::mem_read(g_emu, addr, size, b);
+    ws::send("{\"type\":\"emulate_result\",\"id\":" + id +
+             ",\"op\":\"read_memory\",\"success\":" + bool_str(ok) +
+             ",\"session\":\"" + json_escape(g_emu_session) +
+             "\",\"address\":\"" + hex_addr(addr) +
+             "\",\"data\":\"" + (ok ? emu_bytes_hex(b) : "") + "\"}");
+}
+
+void handle_emu_write_memory(const string &in frame, const string &in id)
+{
+    if (!emu_session_ok(frame)) { emu_send_error(id, 2003, "invalid or stale session"); return; }
+    uint64 addr = parse_u64_hex(json_str(frame, "address", "0x0"));
+    array<uint8> bytes = parse_hex_bytes(json_str(frame, "data", ""));
+    if (bytes.length() == 0 || bytes.length() > EMU_MEM_WRITE_MAX) { emu_send_error(id, 2005, "size out of range"); return; }
+    bool ok = uc::mem_write(g_emu, addr, bytes);
+    // Emulator code may have changed — invalidate Unicorn's translation cache.
+    if (ok) uc::flush_code(g_emu);
+    ws::send("{\"type\":\"emulate_result\",\"id\":" + id +
+             ",\"op\":\"write_memory\",\"success\":" + bool_str(ok) +
+             ",\"session\":\"" + json_escape(g_emu_session) +
+             "\",\"address\":\"" + hex_addr(addr) +
+             "\",\"bytes_written\":" + (ok ? bytes.length() : uint(0)) + "}");
+}
+
+void handle_emu_reset(const string &in frame, const string &in id)
+{
+    if (!emu_session_ok(frame)) { emu_send_error(id, 2003, "invalid or stale session"); return; }
+    // Rebuild the handle from stored config. For process-backed sessions this recreates the handle,
+    // so demand-loaded pages may reflect NEWER target memory (documented — not a snapshot restore).
+    g_emu_insn_total = 0;
+    if (!emu_build(g_emu_session, g_emu_gen)) { emu_send_error(id, 2002, "emulator creation failed"); return; }
+    emu_send_status(id, "reset");
+}
+
+void handle_emu_close(const string &in frame, const string &in id)
+{
+    string sid = json_str(frame, "session", "");
+    if (g_emu != 0 && sid == g_emu_session) emu_close_handle();
+    g_emu_session = "";
+    g_emu_gen = -1;
+    ws::send("{\"type\":\"emulate_result\",\"id\":" + id +
+             ",\"op\":\"close\",\"success\":true,\"session\":\"" + json_escape(sid) +
+             "\",\"status\":\"closed\"}");
+}
+
+void handle_emulate(const string &in frame, const string &in id)
+{
+    string op = json_str(frame, "op", "");
+    if (op == "create") handle_emu_create(frame, id);
+    else if (op == "status") { if (!emu_session_ok(frame)) { emu_send_error(id, 2003, "invalid or stale session"); return; } emu_send_status(id, "status"); }
+    else if (op == "read_registers") handle_emu_read_registers(frame, id);
+    else if (op == "write_register") handle_emu_write_register(frame, id);
+    else if (op == "read_memory") handle_emu_read_memory(frame, id);
+    else if (op == "write_memory") handle_emu_write_memory(frame, id);
+    else if (op == "run") emu_run(frame, id, false);
+    else if (op == "step") emu_run(frame, id, true);
+    else if (op == "reset") handle_emu_reset(frame, id);
+    else if (op == "close") handle_emu_close(frame, id);
+    else emu_send_error(id, 2000, "unknown emulate op: " + op);
+}
+
+// --- capability handshake ----------------------------------------------------
+// Report this agent's protocol version and the exact verb list it dispatches, so the frontend can
+// negotiate capability availability from fact rather than assumption. Keep this list identical to
+// the dispatch in on_ws_message (and to KNOWN_EXT_VERBS / EXT_VERBS on the TS side).
+void handle_capabilities(const string &in frame, const string &in id)
+{
+    string verbs = "\"write\",\"dump\",\"exports\",\"imports\",\"iat_rebuild\",\"sections\"," +
+                   "\"regions\",\"pe_header\",\"pe_dirs\",\"resource_tree\"," +
+                   "\"scan_new\",\"scan_filter\",\"scan_clear\",\"scan_grouped\",\"raw_scan\"," +
+                   "\"emulate\",\"capabilities\"";
+    ws::send("{\"type\":\"capabilities_result\",\"id\":" + id +
+             ",\"success\":true,\"protocol_version\":" + EXT_PROTOCOL_VERSION +
+             ",\"verbs\":[" + verbs + "]}");
+}
+
 // --- ws:: plumbing ----------------------------------------------------------
 
 void on_ws_open()
@@ -1197,6 +1662,8 @@ void on_ws_message(const string &in msg)
     else if (type == "scan_clear") handle_scan_clear(msg, id);
     else if (type == "scan_grouped") handle_scan_grouped(msg, id);
     else if (type == "raw_scan") handle_raw_scan(msg, id);
+    else if (type == "emulate") handle_emulate(msg, id);
+    else if (type == "capabilities") handle_capabilities(msg, id);
     else send_error(id, 1000, "unknown ext verb: " + type);
 }
 
@@ -1224,6 +1691,8 @@ void on_connect_click() { connect_relay(); }
 
 void on_disconnect_click()
 {
+    emu_close_handle();
+    g_emu_session = "";
     ws::disconnect();
     process::detach();
     g_attached = false;
@@ -1243,6 +1712,8 @@ bool main()
 
 void on_unload()
 {
+    // Close any open Unicorn handle so no emulator state leaks on script unload.
+    emu_close_handle();
     ws::disconnect();
     process::detach();
 }

@@ -2,6 +2,7 @@ import { createContext, createMemo, createSignal, useContext, type JSX } from "s
 import { useApp } from "../../../app/AppContext";
 import { scanModuleStrings, type ScanProgress } from "../scanModule";
 import type { StringCategory, StringEntry } from "../extractStrings";
+import * as csv from "../../../ui/csv";
 
 export type ScanStatus = "idle" | "scanning" | "ready" | "error";
 
@@ -162,15 +163,11 @@ function createStringsState() {
     }
 
     function exportCsv() {
-        const rows = filteredStrings();
-        const header = "Address,Length,Type,Category,Value\n";
-        const body = rows
-            .map(
-                (r) =>
-                    `"${r.address}",${r.charCount},"${r.type}","${r.category}","${r.value.replace(/"/g, '""')}"`,
-            )
-            .join("\n");
-        downloadFile(header + body, `${selectedModule() || "strings"}_export.csv`, "text/csv");
+        // RFC-4180 via the shared serializer. `value` is raw target-string data → formula-guarded; the
+        // address is a canonical token and type/category are controlled enums.
+        const rows = filteredStrings().map((r) => [csv.raw(r.address), csv.num(r.charCount), csv.raw(r.type), csv.raw(r.category), csv.text(r.value)]);
+        const body = csv.serializeCsv(rows, { header: ["Address", "Length", "Type", "Category", "Value"] });
+        downloadFile(body, `${selectedModule() || "strings"}_export.csv`, "text/csv");
     }
 
     function exportJson() {

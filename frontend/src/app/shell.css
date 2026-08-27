@@ -657,6 +657,67 @@
     color: var(--ink-3);
 }
 
+/* Capability readout: a scrollable, dense list rendered from the negotiated capability set. */
+.status-pop-wide {
+    width: 340px;
+}
+.status-pop-warn {
+    color: var(--warn);
+    font-weight: 700;
+}
+.status-cap-list {
+    max-height: 320px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.status-cap-row {
+    display: grid;
+    grid-template-columns: 14px 1fr auto;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 0;
+    font-size: var(--fs-ui);
+}
+.status-cap-glyph {
+    text-align: center;
+}
+.status-cap-row.on {
+    color: var(--ink);
+}
+.status-cap-row.off {
+    color: var(--ink-3);
+}
+/* Provenance-coded glyph: confirmed/derived read as live, assumed as caution, the rest as idle. */
+.status-cap-row.prov-confirmed .status-cap-glyph {
+    color: var(--live);
+}
+.status-cap-row.prov-derived .status-cap-glyph {
+    color: var(--accent, var(--live));
+}
+.status-cap-row.prov-assumed .status-cap-glyph {
+    color: var(--warn);
+}
+.status-cap-row.prov-unavailable .status-cap-glyph,
+.status-cap-row.prov-disconnected .status-cap-glyph {
+    color: var(--ink-3);
+}
+.status-cap-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.status-cap-prov {
+    font-size: var(--fs-micro);
+    font-family: var(--mono);
+    color: var(--ink-3);
+    letter-spacing: 0.02em;
+}
+.status-cap-row.prov-assumed .status-cap-prov {
+    color: var(--warn);
+}
+
 @media (prefers-reduced-motion: reduce) {
     .menu-pop,
     .status-pop {

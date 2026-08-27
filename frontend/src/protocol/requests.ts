@@ -150,3 +150,15 @@ export function scanGrouped(
 export function rawScan(client: AxClient, req: t.RawScanRequest): Promise<t.RawScanResult> {
     return client.request(RequestType.RawScan, { ...req }, schemas.rawScanResult, SLOW_TIMEOUT_MS);
 }
+
+// Capability handshake — routed to the ext agent (it owns the write-family verb set). Rejects with
+// AxError(UnknownType) on an older agent that predates the verb; callers fall back to KNOWN_EXT_VERBS.
+export function capabilities(client: AxClient): Promise<t.CapabilitiesResult> {
+    return client.request(RequestType.Capabilities, {}, schemas.capabilitiesResult);
+}
+
+// Unicorn emulator op. A `run`/`step` can take up to the agent's wall-time budget, so pass a
+// generous timeout for those ops (the agent itself hard-caps execution).
+export function emulate(client: AxClient, req: t.EmulateRequest, timeoutMs?: number): Promise<t.EmulateResult> {
+    return client.request(RequestType.Emulate, { ...req }, schemas.emulateResult, timeoutMs);
+}

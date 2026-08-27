@@ -1,4 +1,4 @@
-import { Show, createMemo, createSignal } from "solid-js";
+import { For, Show, createMemo, createSignal } from "solid-js";
 import { useApp } from "../AppContext";
 import { useMemory } from "../../views/memory/state/MemoryContext";
 import { useDismiss } from "../workspace/useDismiss";
@@ -39,6 +39,24 @@ export function StatusBar() {
     const [conn, setConn] = createSignal(false);
     let connRoot: HTMLDivElement | undefined;
     useDismiss(() => connRoot, () => setConn(false), conn);
+
+    const [caps, setCaps] = createSignal(false);
+    let capsRoot: HTMLDivElement | undefined;
+    useDismiss(() => capsRoot, () => setCaps(false), caps);
+    const capStore = app.capabilities;
+    // Rendered from the negotiated capability set, never from assumptions: available first, then
+    // unavailable with their exact missing primitive / reason.
+    const capList = createMemo(() =>
+        [...capStore.all()].sort((a, b) => Number(b.available) - Number(a.available)),
+    );
+    // Each provenance renders distinctly — `assumed` is never shown as equivalent to `confirmed`.
+    const PROV: Record<string, { glyph: string; cls: string; label: string }> = {
+        confirmed: { glyph: "●", cls: "prov-confirmed", label: "confirmed" },
+        assumed: { glyph: "◐", cls: "prov-assumed", label: "assumed" },
+        derived: { glyph: "◆", cls: "prov-derived", label: "derived" },
+        unavailable: { glyph: "○", cls: "prov-unavailable", label: "unavailable" },
+        disconnected: { glyph: "○", cls: "prov-disconnected", label: "disconnected" },
+    };
 
     const serverTone = (): Tone =>
         app.relayStatus() === "open" ? "live" : app.relayStatus() === "connecting" ? "warn" : "danger";
@@ -103,6 +121,49 @@ export function StatusBar() {
                     label={`Ext ${app.extConnected() ? "up" : "down"}`}
                     title="Extension agent (write / dump / exports / sections)"
                 />
+
+                <div class="status-anchor" ref={capsRoot}>
+                    <StatusItem
+                        tone={capStore.availableCount() > 0 ? "live" : "idle"}
+                        glyph="◧"
+                        label={`Caps ${capStore.availableCount()}/${capStore.totalCount()}`}
+                        title="Negotiated capabilities — click to see what is available and what is missing"
+                        onClick={() => setCaps((v) => !v)}
+                    />
+                    <Show when={caps()}>
+                        <div class="status-pop status-pop-wide" role="dialog" aria-label="Capabilities">
+                            <div class="status-pop-head">
+                                Capabilities
+                                <Show when={capStore.handshake() === "assumed"}>
+                                    <span class="status-pop-warn" title="Ext agent predates the capabilities handshake; verbs are assumed, not confirmed"> · assumed</span>
+                                </Show>
+                                <Show when={capStore.protocolMismatch()}>
+                                    <span class="status-pop-warn" title="Ext agent protocol version differs from the frontend"> · protocol mismatch</span>
+                                </Show>
+                            </div>
+                            <div class="status-cap-list">
+                                <For each={capList()}>
+                                    {(c) => (
+                                        <div
+                                            class="status-cap-row"
+                                            classList={{ on: c.available, off: !c.available, [PROV[c.provenance].cls]: true }}
+                                            title={
+                                                c.available
+                                                    ? `${PROV[c.provenance].label} · ${c.level} · ${c.detail}`
+                                                    : `${PROV[c.provenance].label} · ${c.level} · ${c.reason ?? c.detail}${c.missingPrimitive ? `\nmissing: ${c.missingPrimitive}` : ""}${c.alternative ? `\nalternative: ${c.alternative}` : ""}`
+                                            }
+                                        >
+                                            <span class="status-cap-glyph" aria-hidden="true">{PROV[c.provenance].glyph}</span>
+                                            <span class="status-cap-name">{c.title}</span>
+                                            <span class="status-cap-prov">{PROV[c.provenance].label}</span>
+                                        </div>
+                                    )}
+                                </For>
+                            </div>
+                            <p class="status-pop-note">Confirmed = backend reported it. Assumed = older agent, unverified. Derived = built on another capability. Unavailable capabilities show the exact missing Angel primitive on hover. Emulation is an emulator, never a live debugger.</p>
+                        </div>
+                    </Show>
+                </div>
             </div>
 
             <div class="statusbar-spacer" />
@@ -118,6 +179,9 @@ export function StatusBar() {
                         label={app.isFollowingLive() ? "Live" : "Saved"}
                         title={app.isFollowingLive() ? "Following the attached process (polling)" : "Viewing a saved workspace (not live)"}
                     />
+                    <Show when={app.processName()}>
+                        {(name) => <StatusItem tone="idle" glyph="▣" label={name()} title="Attached process (main module)" />}
+                    </Show>
                     <StatusItem tone="idle" glyph="#" label={`pid ${app.pid()}`} title="Attached process id" />
                     <Show when={app.base()}>
                         <StatusItem tone="idle" glyph="⌂" label={`base ${app.base()}`} title="Main module base address" />

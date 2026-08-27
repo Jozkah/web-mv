@@ -146,6 +146,17 @@ export interface ScanGroupedRequest {
     window?: number; // bytes each side of a hit, default 32, capped at 256
 }
 
+export type CapabilitiesRequest = Record<string, never>;
+
+// Emulator: one `emulate` verb, op-dispatched. The payload beyond {op} varies by op; flat CSV
+// encodings (reg_names/reg_values/breakpoints) avoid nested JSON in the AngelScript agent.
+export interface EmulateRequest {
+    op: "create" | "status" | "read_registers" | "write_register" | "read_memory" | "write_memory" | "run" | "step" | "reset" | "close";
+    session: string;
+    generation?: number;
+    [key: string]: unknown;
+}
+
 export interface RawScanRequest {
     address: HexAddr;
     length: number;
@@ -181,6 +192,9 @@ export type RawScanResult = z.infer<typeof s.rawScanResult>;
 export type PeHeaderResult = z.infer<typeof s.peHeaderResult>;
 export type PeDirsResult = z.infer<typeof s.peDirsResult>;
 export type ResourceTreeResult = z.infer<typeof s.resourceTreeResult>;
+export type CapabilitiesResult = z.infer<typeof s.capabilitiesResult>;
+export type EmulateResult = z.infer<typeof s.emulateResult>;
+export type EmuTraceEntry = NonNullable<EmulateResult["trace"]>[number];
 export type PeDirEntry = PeDirsResult["results"][number];
 export type ExportEntry = ExportsResult["results"][number];
 export type ImportEntry = ImportsResult["results"][number];

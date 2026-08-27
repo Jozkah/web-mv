@@ -27,8 +27,88 @@
     background: var(--bg);
 }
 
-.workspace.split .ws-group + .ws-group {
-    border-left: 1px solid var(--border);
+/* Resize divider between adjacent groups ---------------------------------- */
+
+/* Zero layout width: a collapsed flex item whose hit area is absolutely centred over the boundary,
+   so adding a divider never spreads the panes apart. The visible 1px line is drawn here (::after),
+   replacing the old `.ws-group + .ws-group` border, which no longer sees the groups as adjacent. */
+.ws-resizer {
+    position: relative;
+    flex: 0 0 0px;
+    width: 0;
+    align-self: stretch;
+    z-index: 7;
+}
+.ws-resizer::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    transform: translateX(-0.5px);
+    background: var(--border);
+    pointer-events: none;
+}
+
+.ws-resizer-hit {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 11px;
+    cursor: col-resize;
+    touch-action: none;
+}
+.ws-resizer-hit:focus-visible {
+    outline: none;
+}
+
+/* Five dots, hidden while idle; shown on hover, keyboard focus, or active drag. Opacity only, so
+   nothing shifts when they appear. */
+.ws-resizer-grip {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+}
+.ws-resizer--h .ws-resizer-grip {
+    flex-direction: row;
+}
+.ws-resizer-hit:hover .ws-resizer-grip,
+.ws-resizer-hit:focus-visible .ws-resizer-grip,
+.ws-resizer.dragging .ws-resizer-grip {
+    opacity: 0.55;
+}
+.ws-resizer.dragging .ws-resizer-grip {
+    opacity: 1;
+}
+
+.ws-resizer-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--text);
+}
+.ws-resizer-hit:focus-visible .ws-resizer-dot,
+.ws-resizer.dragging .ws-resizer-dot {
+    background: var(--accent);
+}
+.ws-resizer.dragging::after {
+    background: var(--accent);
+}
+
+/* While dragging, force the resize cursor everywhere and kill selection - the pointer leaves the
+   11px hit area but the gesture continues. */
+body.ws-resizing,
+body.ws-resizing * {
+    cursor: col-resize !important;
+    user-select: none !important;
 }
 
 /* Focus accent only matters when there is more than one group. */
@@ -448,7 +528,15 @@
     .ws-tab,
     .ws-tab-close,
     .ws-icon-btn,
-    .ws-empty-btn {
+    .ws-empty-btn,
+    .ws-resizer-grip {
         transition: none;
     }
 }
+
+/* Reusable accessible pane splitter (ui/ResizeHandle). Dotted grip matches the group divider. */
+.resize-handle { flex: 0 0 auto; width: 7px; cursor: col-resize; display: flex; align-items: center; justify-content: center; background: transparent; align-self: stretch; }
+.resize-handle:hover .resize-grip, .resize-handle:focus-visible .resize-grip { opacity: 1; }
+.resize-handle:focus-visible { outline: 2px solid var(--accent, var(--live)); outline-offset: -2px; }
+.resize-grip { width: 2px; height: 26px; border-radius: 2px; background-image: radial-gradient(currentColor 40%, transparent 40%); background-size: 2px 4px; color: var(--ink-3); opacity: 0.35; transition: opacity 0.12s; }
+@media (prefers-reduced-motion: reduce) { .resize-grip { transition: none; } }

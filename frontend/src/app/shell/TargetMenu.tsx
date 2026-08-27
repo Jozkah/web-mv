@@ -21,7 +21,7 @@ export function TargetMenu() {
     const currentLabel = () => {
         if (app.isFollowingLive()) {
             return liveAttached()
-                ? targetLabel({ key: app.liveKey(), pid: app.pid(), base: app.base(), lastSeen: 0 })
+                ? targetLabel({ key: app.liveKey(), pid: app.pid(), base: app.base(), name: app.processName(), lastSeen: 0 })
                 : "No target";
         }
         const t = app.targets().find((t) => t.key === app.workspaceKey());
@@ -71,7 +71,7 @@ export function TargetMenu() {
                             <span class="target-pop-name">Follow Live</span>
                             <span class="target-pop-sub">
                                 {liveAttached()
-                                    ? `${targetLabel({ key: app.liveKey(), pid: app.pid(), base: app.base(), lastSeen: 0 })} · base ${app.base() ?? "—"}`
+                                    ? `${targetLabel({ key: app.liveKey(), pid: app.pid(), base: app.base(), name: app.processName(), lastSeen: 0 })} · base ${app.base() ?? "—"}`
                                     : "waiting for an attached process"}
                             </span>
                         </span>

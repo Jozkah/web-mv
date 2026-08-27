@@ -3,6 +3,7 @@ import { Icon } from "../workspace/icons";
 import { useShell, clampWidth } from "./ShellContext";
 import { useWorkspace, type TabKind } from "../WorkspaceContext";
 import { useApp } from "../AppContext";
+import { targetLabel } from "../../state/workspaceKey";
 import { categoryById } from "./categories";
 
 // The contextual sidebar: content for the selected activity. Every category lists its views as a
@@ -94,7 +95,7 @@ export function ContextualSidebar() {
                                         title="View this saved target's workspace"
                                     >
                                         <span class="dot" />
-                                        <span class="sidebar-row-label">{t.pid !== undefined ? `pid ${t.pid}` : t.key}</span>
+                                        <span class="sidebar-row-label">{targetLabel(t)}</span>
                                     </button>
                                 )}
                             </For>

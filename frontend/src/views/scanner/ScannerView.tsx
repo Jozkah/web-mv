@@ -6,6 +6,7 @@ import { resolveLabel } from "../../state/labels";
 import { errorText } from "../../state/errors";
 import { SCAN_TYPES, valueToBits } from "../../state/scanValue";
 import { useNextScanHotkey } from "../../scan/useNextScanHotkey";
+import { ModulePicker } from "../../scan/ModulePicker";
 import type { ScanHit, ScanValueType, ScanFilterOp } from "../../protocol/types";
 import "../pe/pe.css";
 import "./scanner.css";
@@ -27,8 +28,13 @@ const CMP_OPS: { op: ScanFilterOp; label: string }[] = [
     { op: "lt", label: "< value" },
 ];
 
+// Map a scan value type to the Memory Watch value type for bulk "add to watch".
+const SCAN_TO_WATCH: Record<ScanValueType, "int32" | "uint32" | "float32" | "int64" | "uint64"> = {
+    i32: "int32", u32: "uint32", f32: "float32", i64: "int64", u64: "uint64", unknown: "uint32",
+};
+
 export function ScannerView() {
-    const { attached, modules, client, cheat } = useApp();
+    const { attached, modules, client, cheat, watches } = useApp();
     const nav = useNavigation();
 
     const [value, setValue] = createSignal("");
@@ -116,10 +122,7 @@ export function ScannerView() {
                     <option value="module">module</option>
                     <option value="process">whole process (heap)</option>
                 </select>
-                <select class="pe-input" value={module()} onChange={(e) => setModule(e.currentTarget.value)} disabled={started() || scope() === "process"}>
-                    <option value="">(main module)</option>
-                    <For each={modules.list()}>{(m) => <option value={m.name}>{m.name}</option>}</For>
-                </select>
+                <ModulePicker value={module()} onChange={setModule} emptyLabel="(main module)" disabled={started() || scope() === "process"} />
                 <Show
                     when={started()}
                     fallback={
@@ -152,6 +155,15 @@ export function ScannerView() {
                             </button>
                         )}
                     </For>
+                    <span class="sc-sep" />
+                    <button
+                        class="pe-btn small"
+                        disabled={hits().length === 0}
+                        title="Create a Memory Watch for each shown result (polls the value over time)"
+                        onClick={() => { for (const h of hits()) watches.add({ expression: h.address, valueType: SCAN_TO_WATCH[type()], name: label(h.address) || h.address }); }}
+                    >
+                        Add {hits().length} → Watch
+                    </button>
                 </div>
             </Show>
 

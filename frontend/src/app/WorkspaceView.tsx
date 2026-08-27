@@ -1,6 +1,7 @@
 import { For, Match, Show, Switch, createMemo, onCleanup, onMount } from "solid-js";
 import { useWorkspace, type TabGroup, type TabItem, type TabKind } from "./WorkspaceContext";
 import { TabBar } from "./workspace/TabBar";
+import { ResizeDivider } from "./workspace/ResizeDivider";
 import { WorkspaceEmptyState } from "./workspace/WorkspaceEmptyState";
 import { MemoryView } from "../views/memory/MemoryView";
 import { StaticView } from "../views/static/StaticView";
@@ -17,6 +18,14 @@ import { HexView } from "../views/hex/HexView";
 import { RegionsView } from "../views/regions/RegionsView";
 import { ScannerView } from "../views/scanner/ScannerView";
 import { PointerView } from "../views/pointer/PointerView";
+import { TimelineView } from "../views/timeline/TimelineView";
+import { MemoryWatchView } from "../views/watch/MemoryWatchView";
+import { EmulatorView } from "../views/emulator/EmulatorView";
+import { PatchView } from "../views/patch/PatchView";
+import { ProjectView } from "../views/project/ProjectView";
+import { DebuggerView, HookLabView } from "../views/sidecar/UnavailableViews";
+import { DecompilerView } from "../views/decompiler/DecompilerView";
+import { NetworkView } from "../views/network/NetworkView";
 import "./workspace.css";
 
 export function WorkspaceView() {
@@ -64,17 +73,23 @@ export function WorkspaceView() {
     return (
         <div class="workspace" classList={{ split: ws.groups.length > 1 }}>
             <For each={ws.groups}>
-                {(group) => (
-                    <section
-                        class="ws-group"
-                        classList={{ focused: group.id === ws.activeGroupId }}
-                        onPointerDown={() => ws.focusGroup(group.id)}
-                    >
-                        <TabBar group={group} />
-                        <div class="ws-viewport">
-                            <GroupContent group={group} focused={group.id === ws.activeGroupId} />
-                        </div>
-                    </section>
+                {(group, i) => (
+                    <>
+                        <Show when={i() > 0}>
+                            <ResizeDivider leftId={ws.groups[i() - 1].id} rightId={group.id} />
+                        </Show>
+                        <section
+                            class="ws-group"
+                            classList={{ focused: group.id === ws.activeGroupId }}
+                            style={{ flex: `${group.sizeWeight ?? 1} 1 0` }}
+                            onPointerDown={() => ws.focusGroup(group.id)}
+                        >
+                            <TabBar group={group} />
+                            <div class="ws-viewport">
+                                <GroupContent group={group} focused={group.id === ws.activeGroupId} />
+                            </div>
+                        </section>
+                    </>
                 )}
             </For>
         </div>
@@ -152,6 +167,33 @@ function TabContent(props: { tab: TabItem; focused: boolean }) {
             </Match>
             <Match when={tab.kind === "pointer"}>
                 <PointerView />
+            </Match>
+            <Match when={tab.kind === "timeline"}>
+                <TimelineView />
+            </Match>
+            <Match when={tab.kind === "watch"}>
+                <MemoryWatchView />
+            </Match>
+            <Match when={tab.kind === "emulator"}>
+                <EmulatorView />
+            </Match>
+            <Match when={tab.kind === "patch"}>
+                <PatchView />
+            </Match>
+            <Match when={tab.kind === "project"}>
+                <ProjectView />
+            </Match>
+            <Match when={tab.kind === "decompiler"}>
+                <DecompilerView />
+            </Match>
+            <Match when={tab.kind === "network"}>
+                <NetworkView />
+            </Match>
+            <Match when={tab.kind === "debugger"}>
+                <DebuggerView />
+            </Match>
+            <Match when={tab.kind === "hooklab"}>
+                <HookLabView />
             </Match>
             <Match when={tab.kind === "sigscan"}>
                 <div style={{ flex: "1 1 auto", display: "flex", padding: "12px", "min-height": 0 }}>

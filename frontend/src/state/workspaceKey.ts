@@ -5,9 +5,10 @@ import { load, save } from "./persist";
 // this key, which re-keys those stores so each target loads its own classes/annotations rather
 // than sharing one global blob.
 //
-// The agent only tells us `attached`, `pid`, and `base` (no main-module name/size), so the key is
-// built from the pid - stable for the life of a process - falling back to a fixed scratch key when
-// nothing is attached. Kept as a pure function so it is trivial to reason about and test.
+// The agent's ping only tells us `attached`, `pid`, and `base`, so the key is built from the pid -
+// stable for the life of a process - falling back to a fixed scratch key when nothing is attached.
+// (The executable name, resolved separately from the module list, is display-only and not part of
+// the key.) Kept as a pure function so it is trivial to reason about and test.
 
 export const NO_TARGET_KEY = "none";
 
@@ -15,6 +16,8 @@ export interface TargetInfo {
     key: string;
     pid?: number;
     base?: string;
+    /** Main-module (executable) file name, e.g. "game.exe". Resolved from the module list. */
+    name?: string;
     lastSeen: number;
 }
 
@@ -27,9 +30,11 @@ export function deriveWorkspaceKey(attached: boolean, pid?: number, base?: strin
     return NO_TARGET_KEY;
 }
 
-// Human label for a target tab.
+// Human label for a target tab. Prefers the executable name when known, appending the pid so two
+// instances of the same exe stay distinguishable ("game.exe · pid 13400").
 export function targetLabel(t: TargetInfo): string {
     if (t.key === NO_TARGET_KEY) return "No target";
+    if (t.name) return t.pid !== undefined ? `${t.name} · pid ${t.pid}` : t.name;
     if (t.pid !== undefined) return `pid ${t.pid}`;
     if (t.base) return `base ${t.base}`;
     return t.key;

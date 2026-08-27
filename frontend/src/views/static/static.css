@@ -17,6 +17,14 @@
     overflow-x: auto;
 }
 
+/* Pane resizer sits in the 12px gap between panes. Zero-width itself, it would otherwise add a
+   second gap on each side (24px seam); the negative margins pull that back to the original 12px so
+   the grip and its 1px line land centred in the existing gap. Grip visuals come from .ws-resizer*. */
+.sv-resizer {
+    margin: 0 -6px;
+    align-self: stretch;
+}
+
 .sv-rail {
     flex: 0 0 232px;
     display: flex;

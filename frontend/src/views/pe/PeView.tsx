@@ -2,6 +2,7 @@ import { For, Show, createSignal, type Accessor } from "solid-js";
 import { useApp } from "../../app/AppContext";
 import { dump, exports as fetchExports, imports as fetchImports, sections as fetchSections, peHeader as fetchPeHeader, peDirs as fetchPeDirs } from "../../protocol/requests";
 import { errorText } from "../../state/errors";
+import { ModulePicker } from "../../scan/ModulePicker";
 import type { ExportEntry, ImportEntry, SectionEntry, PeHeaderResult, PeDirEntry } from "../../protocol/types";
 import "./pe.css";
 
@@ -101,14 +102,7 @@ export function PeView() {
     return (
         <div class="pe-view">
             <div class="pe-toolbar">
-                <select
-                    class="pe-input"
-                    value={selected()}
-                    onChange={(ev) => onModuleChange(ev.currentTarget.value)}
-                >
-                    <option value="">(main module)</option>
-                    <For each={modules.list()}>{(m) => <option value={m.name}>{m.name}</option>}</For>
-                </select>
+                <ModulePicker value={selected()} onChange={onModuleChange} emptyLabel="(main module)" />
                 <button class="pe-btn" onClick={() => modules.load()}>↻ modules</button>
                 <button class="pe-btn" onClick={doDump} disabled={!attached()}>⬇ Dump</button>
                 <Show when={dumpMsg()}><span class="pe-note">{dumpMsg()}</span></Show>
