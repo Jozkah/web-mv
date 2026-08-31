@@ -1,0 +1,12 @@
+.capgate { display: flex; flex: 1 1 auto; min-height: 0; align-items: flex-start; justify-content: center; padding: 32px 16px; overflow-y: auto; }
+.capgate-card { max-width: 560px; width: 100%; background: var(--surface-inset, var(--surface)); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; }
+.capgate-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.capgate-title { font-size: var(--fs-h); font-weight: 700; color: var(--ink); }
+.capgate-level, .capgate-prov { font-size: var(--fs-micro); font-family: var(--mono); color: var(--ink-3); padding: 1px 6px; border: 1px solid var(--line); border-radius: 999px; }
+.capgate-status { display: inline-block; font-size: var(--fs-micro); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--danger); margin-bottom: 8px; }
+.capgate-reason { color: var(--ink-2); font-size: var(--fs-ui); line-height: 1.55; margin: 4px 0 10px; }
+.capgate-row { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; }
+.capgate-label { font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); min-width: 84px; }
+.capgate-row code { font-family: var(--mono); font-size: var(--fs-micro); color: var(--accent, var(--live)); word-break: break-word; }
+.capgate-hint { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft, var(--line)); font-size: var(--fs-ui); color: var(--ink-2); line-height: 1.55; }
+.capgate-hint code { font-family: var(--mono); font-size: var(--fs-micro); color: var(--ink); }

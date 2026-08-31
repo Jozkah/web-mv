@@ -30,6 +30,11 @@ export const RequestType = {
     PeHeader: "pe_header",
     PeDirs: "pe_dirs",
     ResourceTree: "resource_tree",
+    // Unicorn emulator verb family (op-dispatched). Served by the ext agent, routed to /agent-ext.
+    Emulate: "emulate",
+    // Capability handshake. Served by the ext agent (it is the source of truth for which
+    // write-family verbs it implements). Routed to /agent-ext by the relay.
+    Capabilities: "capabilities",
 } as const;
 export type RequestType = (typeof RequestType)[keyof typeof RequestType];
 
@@ -61,6 +66,8 @@ export const ResponseType = {
     PeHeader: "pe_header_result",
     PeDirs: "pe_dirs_result",
     ResourceTree: "resource_tree_result",
+    Emulate: "emulate_result",
+    Capabilities: "capabilities_result",
     Error: "error",
 } as const;
 export type ResponseType = (typeof ResponseType)[keyof typeof ResponseType];

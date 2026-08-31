@@ -5,7 +5,10 @@ import { createPoll } from "../../polling/createPoll";
 import { read } from "../../protocol/requests";
 import { resolveGotoInput } from "../../app/useNavigation";
 import { resolveLabel } from "../../state/labels";
+import { errorText } from "../../state/errors";
 import { decodeValue, byteWidth, VALUE_TYPES, type ValueType } from "../cheat/valueCodec";
+import { discoverPointerChains } from "../../scan/pointerScan";
+import type { ModuleRange, PointerChain } from "../../scan/pointerChain";
 import "../pe/pe.css";
 import "./pointer.css";
 
@@ -34,8 +37,61 @@ function parseOffsets(text: string): bigint[] | undefined {
 }
 
 export function PointerView() {
-    const { client, attached, modules, cheat } = useApp();
+    const { client, attached, modules, cheat, capabilities } = useApp();
     const nav = useNavigation();
+
+    // --- pointer-chain discovery (angel-derived, bounded/scoped) ---
+    const [discTarget, setDiscTarget] = createSignal("");
+    const [discModule, setDiscModule] = createSignal("");
+    const [discDepth, setDiscDepth] = createSignal(3);
+    const [discOffset, setDiscOffset] = createSignal("0x400");
+    const [discChains, setDiscChains] = createSignal<PointerChain[]>([]);
+    const [discBusy, setDiscBusy] = createSignal(false);
+    const [discInfo, setDiscInfo] = createSignal<string>();
+    const pointerCap = () => capabilities.available("scan.pointer");
+
+    const readChunk = async (address: bigint, size: number): Promise<Uint8Array | undefined> => {
+        const res = await read(client, { address: "0x" + address.toString(16), size });
+        if (!res.success) return undefined;
+        const hex = res.data.replace(/^0x/, "");
+        const out = new Uint8Array(hex.length >> 1);
+        for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+        return out;
+    };
+
+    const discover = async () => {
+        const t = resolveGotoInput(discTarget(), modules.list());
+        if (!t) { setDiscInfo("invalid target address"); return; }
+        const mods: ModuleRange[] = modules.list().map((m) => ({ name: m.name, base: BigInt(m.base), size: BigInt(m.size) }));
+        const scan = discModule() ? mods.find((m) => m.name === discModule()) : mods[0];
+        if (!scan) { setDiscInfo("no module to scan"); return; }
+        setDiscBusy(true);
+        setDiscInfo("scanning…");
+        setDiscChains([]);
+        try {
+            const res = await discoverPointerChains(readChunk, {
+                target: BigInt(t.address),
+                region: { base: scan.base, size: scan.size },
+                modules: mods,
+                maxDepth: discDepth(),
+                maxOffset: BigInt(discOffset().startsWith("0x") ? discOffset() : "0x" + discOffset()),
+                maxResults: 200,
+                byteBudget: 8 * 1024 * 1024,
+            });
+            setDiscChains(res.chains);
+            setDiscInfo(`${res.chains.length} chains · ${(res.bytesScanned / 1024 / 1024).toFixed(1)} MiB scanned${res.truncated ? " (byte budget hit — scoped result)" : ""}`);
+        } catch (e) {
+            setDiscInfo(errorText(e));
+        } finally {
+            setDiscBusy(false);
+        }
+    };
+
+    const useChain = (c: PointerChain) => {
+        setBaseInput(c.baseModule ? `${c.baseModule}+${c.baseRva}` : c.baseAddress);
+        setOffsetsInput(c.offsets.join(" "));
+        resolve();
+    };
 
     const [baseInput, setBaseInput] = createSignal("");
     const [offsetsInput, setOffsetsInput] = createSignal("");
@@ -120,6 +176,43 @@ export function PointerView() {
                                         <td class="mono">[{h.level}]</td>
                                         <td class="mono">{h.address}</td>
                                         <td class="mono">{h.deref}</td>
+                                    </tr>
+                                )}
+                            </For>
+                        </tbody>
+                    </table>
+                </Show>
+            </div>
+
+            <div class="pt-discover">
+                <div class="pt-disc-head">
+                    Discover chains
+                    <span class="pt-disc-hint">reverse pointer scan — bounded, scoped to one module (a snapshot heuristic, not a live find-writer)</span>
+                </div>
+                <div class="pe-toolbar">
+                    <input class="pe-input pt-base" placeholder="target: 0x… or module+0x…" value={discTarget()} onInput={(e) => setDiscTarget(e.currentTarget.value)} />
+                    <select class="pe-input" value={discModule()} onChange={(e) => setDiscModule(e.currentTarget.value)} title="Module region to scan for pointers">
+                        <option value="">(main module)</option>
+                        <For each={modules.list()}>{(m) => <option value={m.name}>{m.name}</option>}</For>
+                    </select>
+                    <span class="pe-note">depth <input class="pt-num" type="number" min="1" max="6" value={discDepth()} onInput={(e) => setDiscDepth(Number(e.currentTarget.value))} /></span>
+                    <span class="pe-note">max off <input class="pt-num" value={discOffset()} onInput={(e) => setDiscOffset(e.currentTarget.value)} /></span>
+                    <button class="pe-btn sc-primary" disabled={!attached() || !pointerCap() || discBusy()} onClick={discover} title={pointerCap() ? "" : "Requires memory.read (core agent)"}>
+                        {discBusy() ? "scanning…" : "Discover"}
+                    </button>
+                    <Show when={discInfo()}><span class="pe-note">{discInfo()}</span></Show>
+                </div>
+                <Show when={discChains().length > 0}>
+                    <table class="pe-table">
+                        <thead><tr><th>Base</th><th>Offsets</th><th>Depth</th><th /></tr></thead>
+                        <tbody>
+                            <For each={discChains()}>
+                                {(c) => (
+                                    <tr>
+                                        <td class="mono">{c.baseModule ? `${c.baseModule}+${c.baseRva}` : c.baseAddress}</td>
+                                        <td class="mono dim">{c.offsets.join(", ")}</td>
+                                        <td class="mono">{c.depth}</td>
+                                        <td><button class="pe-btn small" onClick={() => useChain(c)} title="Load this chain into the resolver above">Use</button></td>
                                     </tr>
                                 )}
                             </For>

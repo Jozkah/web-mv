@@ -30,6 +30,11 @@ export const SECONDARY_KINDS: TabKindMeta[] = [
     { kind: "regions", label: "Memory Map", description: "Live region map with protection flags" },
     { kind: "scanner", label: "Value Scanner", description: "Search memory for a value, then narrow" },
     { kind: "pointer", label: "Pointer Chain", description: "Resolve a base + offset chain live" },
+    { kind: "watch", label: "Memory Watch", description: "Poll addresses and track value changes over time" },
+    { kind: "patch", label: "Patches", description: "Raw-byte patches with always-reversible originals" },
+    { kind: "emulator", label: "Emulator", description: "Offline Unicorn emulation, registers and instruction trace" },
+    { kind: "timeline", label: "Timeline", description: "Unified event timeline across all evidence" },
+    { kind: "project", label: "Project", description: "Export / import / compare the whole per-target workspace" },
 ];
 
 export const ALL_MENU_KINDS: TabKindMeta[] = [...PRIMARY_KINDS, ...SECONDARY_KINDS];

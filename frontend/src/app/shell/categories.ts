@@ -31,6 +31,7 @@ export const CATEGORIES: Category[] = [
             { kind: "memory", label: "Memory Viewer", hint: "Reconstruct live process memory" },
             { kind: "hex", label: "Memory Inspector", hint: "Live hex + ASCII with byte editing" },
             { kind: "regions", label: "Memory Map", hint: "Region map with protection flags" },
+            { kind: "watch", label: "Memory Watch", hint: "Poll addresses and track value changes" },
             { kind: "pe", label: "PE / Symbols", hint: "Module headers and exports" },
         ],
     },
@@ -44,6 +45,7 @@ export const CATEGORIES: Category[] = [
             { kind: "scanner", label: "Value Scanner", hint: "Search memory for a value, then narrow" },
             { kind: "sigscan", label: "Signature Scan", hint: "Scan a module for an IDA pattern" },
             { kind: "pointer", label: "Pointer Chain", hint: "Resolve a base + offset chain live" },
+            { kind: "network", label: "Network", hint: "PCAP analysis via optional tshark sidecar" },
         ],
     },
     {
@@ -54,6 +56,10 @@ export const CATEGORIES: Category[] = [
         views: [
             { kind: "static", label: "Modules / Disassembly", hint: "Functions, disassembly, signatures" },
             { kind: "analysis", label: "Analysis", hint: "Call graph, CFG, operand search" },
+            { kind: "emulator", label: "Emulator", hint: "Offline Unicorn emulation and trace" },
+            { kind: "decompiler", label: "Decompiler", hint: "Optional Ghidra headless (unavailable until configured)" },
+            { kind: "debugger", label: "Debugger", hint: "Live debugging — unavailable (no Angel primitive)" },
+            { kind: "hooklab", label: "Hook Lab", hint: "Native hooks — unavailable (no Angel primitive)" },
             { kind: "diff", label: "Snapshot Diff", hint: "Compare two memory snapshots" },
             { kind: "datatypes", label: "Data Types", hint: "Global structs and enums" },
         ],
@@ -63,7 +69,10 @@ export const CATEGORIES: Category[] = [
         label: "Modify",
         icon: "modify",
         primary: "cheat",
-        views: [{ kind: "cheat", label: "Cheat Table", hint: "Pinned addresses, write and freeze" }],
+        views: [
+            { kind: "cheat", label: "Cheat Table", hint: "Pinned addresses, write and freeze" },
+            { kind: "patch", label: "Patches", hint: "Raw-byte patches with reversible originals" },
+        ],
     },
     {
         id: "organize",
@@ -73,6 +82,8 @@ export const CATEGORIES: Category[] = [
         views: [
             { kind: "bookmarks", label: "Bookmarks", hint: "Saved classes and modules" },
             { kind: "history", label: "History", hint: "Recently visited locations" },
+            { kind: "timeline", label: "Timeline", hint: "Unified event timeline across all evidence" },
+            { kind: "project", label: "Project", hint: "Export / import / compare the whole workspace" },
         ],
     },
 ];

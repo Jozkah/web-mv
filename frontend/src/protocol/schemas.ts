@@ -374,6 +374,52 @@ export const rawScanResult = z.object({
     results: z.array(hexAddr),
 });
 
+// Unicorn emulator. One `emulate` verb with an `op` discriminator; the reply carries whichever
+// fields that op produces (all optional here — the emulator store reads the ones it expects per op).
+// Register values and addresses are canonical hex strings (64-bit safe).
+const emuTraceEntry = z.object({
+    index: z.number().int(),
+    address: hexAddr,
+    size: z.number().int(),
+    bytes: z.string().optional(),
+});
+
+export const emulateResult = z.object({
+    type: z.literal(ResponseType.Emulate),
+    id: z.number().int(),
+    op: z.string(),
+    success: z.boolean(),
+    session: z.string().optional(),
+    mode: z.string().optional(),
+    status: z.string().optional(),
+    stop_reason: z.string().optional(),
+    rip: hexAddr.optional(),
+    registers: z.record(z.string(), hexAddr).optional(),
+    instruction_count: z.number().int().optional(),
+    instruction_total: z.number().int().optional(),
+    trace_count: z.number().int().optional(),
+    trace_dropped: z.number().int().optional(),
+    unicorn_error: z.number().int().optional(),
+    fault_address: hexAddr.optional(),
+    duration_us: z.number().int().optional(),
+    breakpoint: hexAddr.optional(),
+    trace: z.array(emuTraceEntry).optional(),
+    address: hexAddr.optional(),
+    data: z.string().optional(),
+    bytes_written: z.number().int().optional(),
+});
+
+// Capability handshake: the ext agent reports its protocol version and the exact verb list it
+// implements. The frontend negotiates capability availability from this plus core/ext connection
+// state (see protocol/capabilities.ts). `verbs` is authoritative — never assumed.
+export const capabilitiesResult = z.object({
+    type: z.literal(ResponseType.Capabilities),
+    id: z.number().int(),
+    success: z.boolean(),
+    protocol_version: z.number().int(),
+    verbs: z.array(z.string()),
+});
+
 // Discriminated union of every non-error response, for callers that want to parse
 // a frame without knowing its type up front. AxClient validates against the specific
 // per-request schema instead, but this is here for completeness/tooling.
@@ -405,4 +451,6 @@ export const responseSchema = z.discriminatedUnion("type", [
     peHeaderResult,
     peDirsResult,
     resourceTreeResult,
+    emulateResult,
+    capabilitiesResult,
 ]);

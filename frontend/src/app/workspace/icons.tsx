@@ -139,6 +139,74 @@ const PATHS: Record<IconName, () => JSX.Element> = {
             <path d="M5.8 8h4.4" />
         </>
     ),
+    // Decompiler: braces with a flow line (source reconstruction).
+    decompiler: () => (
+        <>
+            <path d="M5.5 3.5C4 3.5 4 5 4 6.5S3 8 3 8s1 0 1 1.5S4 12.5 5.5 12.5" />
+            <path d="M9 5.5h3.5M9 8h3.5M9 10.5h2" />
+        </>
+    ),
+    // Network: connected nodes over a wire.
+    network: () => (
+        <>
+            <circle cx="4" cy="4" r="1.4" />
+            <circle cx="12" cy="4" r="1.4" />
+            <circle cx="8" cy="12" r="1.4" />
+            <path d="M4 5.4v3.6h8V5.4M8 9v1.6" />
+        </>
+    ),
+    // Debugger: a bug.
+    debugger: () => (
+        <>
+            <ellipse cx="8" cy="8.5" rx="3" ry="3.5" />
+            <path d="M8 5V3M6 5.5 4.5 4M10 5.5 11.5 4M5 8.5H2.5M11 8.5h2.5M5.2 11 4 12.5M10.8 11 12 12.5" />
+        </>
+    ),
+    // Hook Lab: a fishing hook.
+    hooklab: () => (
+        <>
+            <path d="M8 3v5a2.5 2.5 0 1 1-2.5-2.5" />
+            <circle cx="8" cy="2.6" r="0.8" fill="currentColor" stroke="none" />
+        </>
+    ),
+    // Project: a database cylinder.
+    project: () => (
+        <>
+            <ellipse cx="8" cy="4" rx="4.5" ry="1.8" />
+            <path d="M3.5 4v8c0 1 2 1.8 4.5 1.8s4.5-.8 4.5-1.8V4" />
+            <path d="M3.5 8c0 1 2 1.8 4.5 1.8s4.5-.8 4.5-1.8" />
+        </>
+    ),
+    // Patches: a bandage / plaster over bytes.
+    patch: () => (
+        <>
+            <rect x="3" y="5.5" width="10" height="5" rx="2.5" transform="rotate(-30 8 8)" />
+            <path d="M6.5 6.2 9.5 9.8M9.5 6.2 6.5 9.8" />
+        </>
+    ),
+    // Memory Watch: an eye over a value cell (polling watcher).
+    watch: () => (
+        <>
+            <path d="M2 8s2.5-4 6-4 6 4 6 4-2.5 4-6 4-6-4-6-4Z" />
+            <circle cx="8" cy="8" r="1.8" />
+        </>
+    ),
+    // Emulator: a CPU chip with a small "play" glyph (emulated execution).
+    emulator: () => (
+        <>
+            <rect x="3.5" y="3.5" width="9" height="9" rx="1" />
+            <path d="M6.5 6.5 9.5 8l-3 1.5Z" fill="currentColor" stroke="none" />
+            <path d="M6 1.8v1.7M10 1.8v1.7M6 12.5v1.7M10 12.5v1.7M1.8 6h1.7M1.8 10h1.7M12.5 6h1.7M12.5 10h1.7" />
+        </>
+    ),
+    // Timeline: a horizontal axis with event ticks and a marker.
+    timeline: () => (
+        <>
+            <path d="M2.5 8h11" />
+            <path d="M5 8V5.5M8 8v-3M11 8V6" />
+            <circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none" />
+        </>
+    ),
     close: () => <path d="M4 4l8 8M12 4l-8 8" />,
     plus: () => <path d="M8 3.5v9M3.5 8h9" />,
     "chevron-down": () => <path d="M4 6l4 4 4-4" />,

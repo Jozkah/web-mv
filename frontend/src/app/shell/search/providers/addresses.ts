@@ -1,8 +1,45 @@
 import { hasQueryText } from "../query";
 import type { NavEntry } from "../../../../state/navStore";
-import type { SearchProvider, SearchResult } from "../types";
+import type { SearchAction, SearchContext, SearchProvider, SearchResult } from "../types";
 import { paletteStores } from "../stores";
 import { copyAction } from "./util";
+
+// Centralized address actions that wire the Memory Watch (Phase 2) and Emulator (Phase 3) features
+// into navigation: every resolved address in the palette can spawn a watch or an emulator session.
+// Loosely typed against the app store bag (the palette's single seam to app state).
+interface AddrActionApp {
+    watches?: { add?: (i: { expression: string; valueType: string; name?: string }) => void };
+    emulator?: { availability?: () => string; createSession?: (i: { entryAddress: string }) => unknown };
+}
+function addressActions(address: string, label: string): SearchAction[] {
+    const acts: SearchAction[] = [
+        {
+            id: "watch",
+            label: "Add Memory Watch",
+            icon: "watch",
+            run: (c: SearchContext) => {
+                (c.stores as { app?: AddrActionApp }).app?.watches?.add?.({ expression: address, valueType: "int32", name: label });
+                c.openView("watch");
+            },
+        },
+    ];
+    return acts;
+}
+function emulateAction(address: string): SearchAction {
+    return {
+        id: "emulate",
+        label: "Emulate from here",
+        icon: "emulator",
+        run: (c: SearchContext) => {
+            const app = (c.stores as { app?: AddrActionApp }).app;
+            const avail = app?.emulator?.availability?.();
+            // Prepare a session (no execution); only when the capability is live. Otherwise just open
+            // the Emulator view so the user sees the honest unavailable state.
+            if (avail === "available" || avail === "assumed") app?.emulator?.createSession?.({ entryAddress: address });
+            c.openView("emulator");
+        },
+    };
+}
 
 // Address omnibox. When the query itself parses as an address expression (`0x1400+0x28`,
 // `client.dll+0x1a3f`, a bare hex value), synthesise direct "go to" results. Also surfaces the
@@ -37,6 +74,8 @@ export const addressesProvider: SearchProvider = {
                     defaultAction: { id: "go", label: "Go to in disassembler", run: (c) => c.goto("static", address, label) },
                     altActions: [
                         { id: "mem", label: "Open in Memory Viewer", icon: "memory", run: (c) => c.goto("memory", address, label) },
+                        ...addressActions(address, label),
+                        emulateAction(address),
                         copyAction("copy", "Copy address", address),
                     ],
                 });

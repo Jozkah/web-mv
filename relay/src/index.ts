@@ -1,5 +1,7 @@
 import { dirname, join, normalize } from "path";
 import { activeAgentCount, agentConnected, callAgent, extConnected, handlers, noteClient, type Role, type SocketData } from "./relay";
+import { analyze as ghidraAnalyze, decompile as ghidraDecompile, probe as ghidraProbe, type AnalyzeJob, type DecompileJob, type GhidraConfig } from "./ghidra";
+import { analyze as tsharkAnalyze, probeRun as tsharkProbeRun, type AnalyzeJob as TsharkJob, type TsharkConfig } from "./tshark";
 
 // Local control channel into a process's memory - never bind to anything but loopback.
 const HOSTNAME = "127.0.0.1";
@@ -58,6 +60,100 @@ async function handleRpc(req: Request): Promise<Response> {
     }
 }
 
+// Optional Ghidra headless routes (loopback only, like everything else the relay binds). These run
+// a LOCAL, user-supplied Ghidra install on an Angel-obtained dump file the relay reads from disk —
+// no unbounded bytes cross the socket, and Ghidra never touches the target process.
+const GHIDRA_ANALYZE_TIMEOUT_MS = 620_000; // must exceed the runner's own hard ceiling
+
+async function readJsonBody(req: Request): Promise<Record<string, unknown> | null> {
+    try {
+        const body = JSON.parse(await req.text());
+        return typeof body === "object" && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>) : null;
+    } catch {
+        return null;
+    }
+}
+
+async function handleGhidraProbe(req: Request): Promise<Response> {
+    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+    if (req.method !== "POST") return jsonResponse(JSON.stringify({ error: "POST only" }), 405);
+    const body = await readJsonBody(req);
+    const config = body?.config as GhidraConfig | undefined;
+    if (!config) return jsonResponse(JSON.stringify({ error: "config required" }), 400);
+    return jsonResponse(JSON.stringify(ghidraProbe(config)), 200);
+}
+
+async function handleGhidraAnalyze(req: Request): Promise<Response> {
+    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+    if (req.method !== "POST") return jsonResponse(JSON.stringify({ error: "POST only" }), 405);
+    const body = await readJsonBody(req);
+    const config = body?.config as GhidraConfig | undefined;
+    const job = body?.job as AnalyzeJob | undefined;
+    if (!config || !job) return jsonResponse(JSON.stringify({ error: "config and job required" }), 400);
+    try {
+        const result = await Promise.race([
+            ghidraAnalyze(config, job),
+            new Promise<never>((_, rej) => setTimeout(() => rej(new Error("relay ghidra timeout")), GHIDRA_ANALYZE_TIMEOUT_MS)),
+        ]);
+        return jsonResponse(JSON.stringify(result), 200);
+    } catch (e) {
+        return jsonResponse(JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e), durationMs: 0 }), 200);
+    }
+}
+
+async function handleGhidraDecompile(req: Request): Promise<Response> {
+    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+    if (req.method !== "POST") return jsonResponse(JSON.stringify({ error: "POST only" }), 405);
+    const body = await readJsonBody(req);
+    const config = body?.config as GhidraConfig | undefined;
+    const job = body?.job as DecompileJob | undefined;
+    if (!config || !job) return jsonResponse(JSON.stringify({ error: "config and job required" }), 400);
+    try {
+        const result = await Promise.race([
+            ghidraDecompile(config, job),
+            new Promise<never>((_, rej) => setTimeout(() => rej(new Error("relay ghidra decompile timeout")), GHIDRA_ANALYZE_TIMEOUT_MS)),
+        ]);
+        return jsonResponse(JSON.stringify(result), 200);
+    } catch (e) {
+        return jsonResponse(JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e), durationMs: 0 }), 200);
+    }
+}
+
+async function handleTsharkProbe(req: Request): Promise<Response> {
+    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+    if (req.method !== "POST") return jsonResponse(JSON.stringify({ error: "POST only" }), 405);
+    const body = await readJsonBody(req);
+    const config = body?.config as TsharkConfig | undefined;
+    if (!config) return jsonResponse(JSON.stringify({ error: "config required" }), 400);
+    try {
+        const result = await Promise.race([
+            tsharkProbeRun(config),
+            new Promise<never>((_, rej) => setTimeout(() => rej(new Error("relay tshark probe timeout")), 30_000)),
+        ]);
+        return jsonResponse(JSON.stringify(result), 200);
+    } catch (e) {
+        return jsonResponse(JSON.stringify({ ok: false, pathValid: false, runnable: false, error: e instanceof Error ? e.message : String(e) }), 200);
+    }
+}
+
+async function handleTsharkAnalyze(req: Request): Promise<Response> {
+    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+    if (req.method !== "POST") return jsonResponse(JSON.stringify({ error: "POST only" }), 405);
+    const body = await readJsonBody(req);
+    const config = body?.config as TsharkConfig | undefined;
+    const job = body?.job as TsharkJob | undefined;
+    if (!config || !job) return jsonResponse(JSON.stringify({ error: "config and job required" }), 400);
+    try {
+        const result = await Promise.race([
+            tsharkAnalyze(config, job),
+            new Promise<never>((_, rej) => setTimeout(() => rej(new Error("relay tshark timeout")), GHIDRA_ANALYZE_TIMEOUT_MS)),
+        ]);
+        return jsonResponse(JSON.stringify(result), 200);
+    } catch (e) {
+        return jsonResponse(JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e), durationMs: 0 }), 200);
+    }
+}
+
 // The built frontend (frontend/dist) copied next to the executable as ./public. Resolved from
 // the executable's own location so it works no matter where the launcher sets the working dir;
 // override with UI_DIR when running from source. Serving the UI here keeps the whole tool to a
@@ -89,6 +185,11 @@ const server = Bun.serve({
         // Stateless HTTP lane: any number of concurrent callers, multiplexed onto the
         // one agent socket by the relay. This is the seam the VSCode chats use.
         if (pathname === "/rpc") return handleRpc(req);
+        if (pathname === "/ghidra/probe") return handleGhidraProbe(req);
+        if (pathname === "/ghidra/analyze") return handleGhidraAnalyze(req);
+        if (pathname === "/ghidra/decompile") return handleGhidraDecompile(req);
+        if (pathname === "/tshark/probe") return handleTsharkProbe(req);
+        if (pathname === "/tshark/analyze") return handleTsharkAnalyze(req);
 
         // Liveness for the UI's "agents" badge: how many RPC callers are currently active.
         if (pathname === "/status") {

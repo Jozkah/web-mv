@@ -144,7 +144,7 @@ export function DisassemblyView() {
                             title="Open IDA SigMaker for this function"
                             style={{ font: "inherit", "font-size": "12px", cursor: "pointer", padding: "2px 8px" }}
                         >
-                            ⚡ sigmaker
+                            sigmaker
                         </button>
                     </Show>
                 }

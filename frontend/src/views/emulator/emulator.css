@@ -1,0 +1,56 @@
+.emu-view { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; min-width: 0; }
+
+.emu-controlbar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.emu-input { flex: 1 1 220px; min-width: 160px; padding: 5px 8px; background: var(--surface-inset, var(--surface)); border: 1px solid var(--line); border-radius: var(--r); color: var(--ink); font-size: var(--fs-ui); }
+.emu-input-sm { flex: 0 1 130px; min-width: 100px; }
+.emu-btn { padding: 4px 10px; background: var(--surface-inset, var(--surface)); border: 1px solid var(--line); border-radius: var(--r); color: var(--ink-2); font-size: var(--fs-ui); cursor: pointer; white-space: nowrap; }
+.emu-btn:hover:not(:disabled) { color: var(--ink); border-color: var(--line-strong, var(--line)); }
+.emu-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.emu-btn.sm { padding: 2px 7px; font-size: var(--fs-micro); }
+.emu-field { font-size: var(--fs-micro); color: var(--ink-3); display: inline-flex; align-items: center; gap: 3px; }
+.emu-num { width: 72px; padding: 3px 5px; background: var(--surface-inset, var(--surface)); border: 1px solid var(--line); border-radius: var(--r); color: var(--ink); font-family: var(--mono); font-size: var(--fs-micro); }
+.emu-spacer { flex: 1 1 auto; }
+.emu-avail { font-size: var(--fs-micro); font-weight: 700; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); }
+.emu-avail.tone-live { color: var(--live); border-color: var(--live); }
+.emu-avail.tone-warn { color: var(--warn); border-color: var(--warn); }
+.emu-avail.tone-danger { color: var(--danger); border-color: var(--danger); }
+.emu-avail.tone-idle { color: var(--ink-3); }
+.emu-gen { font-size: var(--fs-micro); font-family: var(--mono); color: var(--ink-3); }
+
+.emu-banner { padding: 6px 12px; font-size: var(--fs-ui); color: var(--ink-2); background: var(--surface-inset, var(--surface)); border-bottom: 1px solid var(--line-soft, var(--line)); }
+.emu-banner.warn { color: var(--warn); }
+.emu-banner.danger { color: var(--danger); }
+
+.emu-body { display: grid; grid-template-columns: 220px 1fr minmax(0, 300px); flex: 1 1 auto; min-height: 0; }
+.emu-registers, .emu-trace, .emu-details { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line-soft, var(--line)); }
+.emu-details { border-right: none; }
+.emu-pane-head { display: flex; align-items: center; gap: 6px; padding: 5px 10px; font-size: var(--fs-micro); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); border-bottom: 1px solid var(--line-soft, var(--line)); }
+.emu-pane-sub { padding: 6px 10px 2px; font-size: var(--fs-micro); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); }
+.emu-empty { padding: 16px; color: var(--ink-3); font-size: var(--fs-ui); text-align: center; }
+.emu-warn { color: var(--warn); }
+.emu-mono { font-family: var(--mono); }
+
+.emu-reg-grid { overflow-y: auto; padding: 4px 8px; display: flex; flex-direction: column; gap: 2px; }
+.emu-reg-row { display: grid; grid-template-columns: 52px 1fr; align-items: center; gap: 6px; }
+.emu-reg-name { font-family: var(--mono); font-size: var(--fs-micro); color: var(--ink-2); }
+.emu-reg-val { font-family: var(--mono); font-size: var(--fs-micro); padding: 2px 5px; background: var(--surface-inset, var(--surface)); border: 1px solid var(--line); border-radius: var(--r); color: var(--ink); width: 100%; box-sizing: border-box; }
+.emu-reg-row.changed .emu-reg-val { color: var(--warn); border-color: var(--warn); }
+
+.emu-trace-filter { flex: 1 1 auto; margin-left: 8px; padding: 2px 6px; background: var(--surface-inset, var(--surface)); border: 1px solid var(--line); border-radius: var(--r); color: var(--ink); font-size: var(--fs-micro); }
+.emu-trace-head, .emu-trace-row { display: grid; grid-template-columns: 60px minmax(110px, 1fr) 36px minmax(80px, 1.4fr); gap: 6px; padding: 0 10px; align-items: center; font-family: var(--mono); font-size: var(--fs-micro); }
+.emu-trace-head { height: 22px; color: var(--ink-3); border-bottom: 1px solid var(--line-soft, var(--line)); text-transform: uppercase; }
+.emu-trace-body { overflow-y: auto; min-height: 0; flex: 1 1 auto; }
+.emu-trace-row { position: absolute; top: 0; left: 0; width: 100%; box-sizing: border-box; border-bottom: 1px solid var(--line-soft, var(--line)); cursor: pointer; color: var(--ink-2); }
+.emu-trace-row:hover { background: var(--surface-hover, rgba(127,127,127,0.06)); color: var(--ink); }
+.emu-tc-idx { color: var(--ink-3); }
+.emu-tc-addr { color: var(--accent, var(--live)); overflow: hidden; text-overflow: ellipsis; }
+.emu-tc-bytes { color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; }
+
+.emu-details { padding-bottom: 8px; overflow-y: auto; }
+.emu-fields { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 4px 10px; }
+.emu-fields dt { color: var(--ink-3); font-size: var(--fs-micro); }
+.emu-fields dd { margin: 0; font-family: var(--mono); font-size: var(--fs-micro); color: var(--ink); word-break: break-all; }
+.emu-deltas { display: flex; flex-direction: column; gap: 1px; padding: 2px 10px; }
+.emu-delta { display: flex; justify-content: space-between; gap: 8px; font-size: var(--fs-micro); }
+.emu-delta span:first-child { font-family: var(--mono); color: var(--ink-2); }
+.emu-note { margin: 10px; padding-top: 8px; border-top: 1px solid var(--line-soft, var(--line)); font-size: var(--fs-micro); color: var(--ink-3); line-height: 1.5; }

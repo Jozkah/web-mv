@@ -32,3 +32,9 @@
 .pe-table tr.bad td { color: #e46a62; }
 .pe-btn.active { border-color: var(--accent-border); background: var(--accent-bg); color: var(--accent); }
 .pe-btn.sc-primary { border-color: var(--accent-border); background: var(--accent-bg); color: var(--accent); }
+
+/* Pointer-chain discovery panel */
+.pt-discover { border-top: 1px solid var(--line); margin-top: 4px; }
+.pt-disc-head { display: flex; align-items: baseline; gap: 8px; padding: 6px 12px; font-size: var(--fs-micro); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); }
+.pt-disc-hint { text-transform: none; font-weight: 400; letter-spacing: 0; color: var(--ink-3); }
+.pt-num { width: 62px; padding: 2px 5px; margin-left: 3px; background: var(--surface-inset, var(--surface)); border: 1px solid var(--line); border-radius: var(--r); color: var(--ink); font-family: var(--mono); font-size: var(--fs-micro); }

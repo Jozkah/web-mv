@@ -28,7 +28,7 @@ export function AppBar() {
     const workspaceName = () => {
         if (app.isFollowingLive()) {
             return app.liveKey() !== NO_TARGET_KEY
-                ? targetLabel({ key: app.liveKey(), pid: app.pid(), base: app.base(), lastSeen: 0 })
+                ? targetLabel({ key: app.liveKey(), pid: app.pid(), base: app.base(), name: app.processName(), lastSeen: 0 })
                 : "No target attached";
         }
         const t = app.targets().find((t) => t.key === app.workspaceKey());
