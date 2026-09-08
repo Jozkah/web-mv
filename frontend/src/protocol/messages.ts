@@ -35,6 +35,10 @@ export const RequestType = {
     // Capability handshake. Served by the ext agent (it is the source of truth for which
     // write-family verbs it implements). Routed to /agent-ext by the relay.
     Capabilities: "capabilities",
+    // Menu control: enumerate/get/set the ext agent's own overlay controls. Served by the ext agent.
+    UiList: "ui_list",
+    UiGet: "ui_get",
+    UiSet: "ui_set",
 } as const;
 export type RequestType = (typeof RequestType)[keyof typeof RequestType];
 
@@ -68,6 +72,9 @@ export const ResponseType = {
     ResourceTree: "resource_tree_result",
     Emulate: "emulate_result",
     Capabilities: "capabilities_result",
+    UiList: "ui_list_result",
+    UiGet: "ui_get_result",
+    UiSet: "ui_set_result",
     Error: "error",
 } as const;
 export type ResponseType = (typeof ResponseType)[keyof typeof ResponseType];
@@ -109,5 +116,7 @@ export const ErrorCode = {
     ModuleSizeUnavailable: 1021,
     NoActiveScan: 1022,
     InvalidPattern: 1023,
+    // Menu control: a danger-flagged control was set while the operator has not clicked ARM.
+    MenuControlDisarmed: 1024,
 } as const;
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

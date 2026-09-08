@@ -207,6 +207,13 @@ const PATHS: Record<IconName, () => JSX.Element> = {
             <circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none" />
         </>
     ),
+    // Menu control: a toggle switch (pill with a knob) — flips the connected agent's own controls.
+    menu: () => (
+        <>
+            <rect x="2.5" y="5.5" width="11" height="5" rx="2.5" />
+            <circle cx="9.5" cy="8" r="1.6" fill="currentColor" stroke="none" />
+        </>
+    ),
     close: () => <path d="M4 4l8 8M12 4l-8 8" />,
     plus: () => <path d="M8 3.5v9M3.5 8h9" />,
     "chevron-down": () => <path d="M4 6l4 4 4-4" />,

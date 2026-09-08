@@ -14,7 +14,7 @@ import type { ViewId } from "./AppContext";
 // appears when the user explicitly sends a tab "to the side". Each group owns its own ordered
 // tab list and its own active tab - a tab belongs to exactly one group, never rendered twice.
 
-export type TabKind = ViewId | "sigscan" | "analysis" | "cheat" | "pe" | "bookmarks" | "diff" | "hex" | "regions" | "scanner" | "pointer" | "timeline" | "watch" | "emulator" | "patch" | "project" | "decompiler" | "network" | "debugger" | "hooklab";
+export type TabKind = ViewId | "sigscan" | "analysis" | "cheat" | "pe" | "bookmarks" | "diff" | "hex" | "regions" | "scanner" | "pointer" | "timeline" | "watch" | "emulator" | "patch" | "project" | "decompiler" | "network" | "debugger" | "hooklab" | "menu";
 
 export interface TabItem {
     id: string;
@@ -68,6 +68,7 @@ const SINGLETON_KINDS: ReadonlySet<TabKind> = new Set<TabKind>([
     "network",
     "debugger",
     "hooklab",
+    "menu",
 ]);
 
 const DEFAULT_KIND_TITLE: Record<TabKind, string> = {
@@ -95,6 +96,7 @@ const DEFAULT_KIND_TITLE: Record<TabKind, string> = {
     network: "Network",
     debugger: "Debugger",
     hooklab: "Hook Lab",
+    menu: "Menu Control",
 };
 
 export function defaultTabTitle(kind: TabKind): string {

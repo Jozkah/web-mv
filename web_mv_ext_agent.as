@@ -1619,6 +1619,199 @@ void handle_emulate(const string &in frame, const string &in id)
     else emu_send_error(id, 2000, "unknown emulate op: " + op);
 }
 
+// --- menu control (ui_list / ui_get / ui_set) --------------------------------
+// Enumerate and toggle THIS agent's own menu controls over the /agent-ext lane, so the web-mv
+// frontend (and any MCP client) can flip features for automated testing. This is the same "AI
+// Menu Control" system shipped standalone in angel-menu-mcp; here it rides the existing ext
+// socket rather than a private ws:: lane. Control read/set goes through the STORED handle
+// (ui::get / ui::set on a stored copy track the real control - live-verified on the Angel host).
+//
+// Reads happen on the ws thread; SETS are queued and applied on the render thread by on_render(),
+// because ui::set mutates host UI state and must not run off the render/main thread. The applied
+// value is echoed back (an immediate read-back can lag one frame).
+
+const int MC_CHECK = 0, MC_SLIDER = 1, MC_COMBO = 2;
+
+class McCtl
+{
+    string name;
+    int    kind;
+    bool   danger;      // true -> ui_set refused unless the operator clicks ARM in the overlay
+    checkbox cb;
+    slider   sl;
+    combobox co;
+    int mn, mx, st;             // slider bounds
+    array<string> options;     // combo labels
+}
+array<McCtl> g_mc;                                  // built once in mc_build_registry()
+
+class McSetReq { string id; int idx; bool bval; int ival; }
+mutex@ g_mc_qmtx = create_mutex();
+array<McSetReq> g_mc_q;                             // ui_set requests, drained on render thread
+atomic_bool@ g_mc_armed = atomic_bool(false);      // danger-control arm (flipped by a live click)
+
+// demo controls exposed to the menu-control lane (overlay-local; no game memory except the danger one)
+checkbox m_demo_esp_boxes, m_demo_esp_names, m_demo_esp_health, m_demo_force_write;
+slider   m_demo_max_distance;
+combobox m_demo_box_style;
+
+void mc_check(const string &in name, checkbox &in c, bool danger = false)
+{ McCtl u; u.name = name; u.kind = MC_CHECK; u.danger = danger; u.cb = c; g_mc.insertLast(u); }
+void mc_slider(const string &in name, slider &in s, int mn, int mx, int st, bool danger = false)
+{ McCtl u; u.name = name; u.kind = MC_SLIDER; u.danger = danger; u.sl = s; u.mn = mn; u.mx = mx; u.st = st; g_mc.insertLast(u); }
+void mc_combo(const string &in name, combobox &in c, const string &in optsCsv, bool danger = false)
+{ McCtl u; u.name = name; u.kind = MC_COMBO; u.danger = danger; u.co = c; mc_split_csv(optsCsv, u.options); g_mc.insertLast(u); }
+
+void mc_split_csv(const string &in csv, array<string> &inout dst)
+{
+    string cur = "";
+    for (uint i = 0; i < csv.length(); i++)
+    {
+        if (csv[i] == 44) { dst.insertLast(cur); cur = ""; }   // 44 = ','
+        else cur += csv.substr(i, 1);
+    }
+    if (cur != "") dst.insertLast(cur);
+}
+int mc_find(const string &in name)
+{
+    for (uint i = 0; i < g_mc.length(); i++) if (g_mc[i].name == name) return int(i);
+    return -1;
+}
+string mc_kind_name(int k) { if (k == MC_CHECK) return "check"; if (k == MC_SLIDER) return "slider"; return "combo"; }
+
+// Parse a bare (unquoted) JSON boolean, e.g. "value":true. json_str only matches quoted values and
+// json_num only matches digits, so neither catches the standard JSON.stringify({value:true}) shape.
+bool mc_json_bool(const string &in s, const string &in key, bool def)
+{
+    string needle = "\"" + key + "\"";
+    int p = s.findFirst(needle);
+    if (p < 0) return def;
+    int c = s.findFirst(":", p + int(needle.length()));
+    if (c < 0) return def;
+    uint i = uint(c) + 1;
+    while (i < s.length() && s[i] == 0x20) i++;
+    return i < s.length() && s[i] == 't'[0];
+}
+
+string mc_value_json(McCtl@ u)
+{
+    if (u.kind == MC_CHECK)  return ui::get(u.cb) ? "true" : "false";
+    if (u.kind == MC_SLIDER) return "" + ui::get(u.sl);
+    return "" + int(ui::get(u.co));   // MC_COMBO -> selected index
+}
+
+// Registered by main() after the demo controls are added. Re-run codegen (generate-registry.mjs)
+// to point this at a richer overlay's controls; the lane itself is control-agnostic.
+void mc_build_registry()
+{
+    mc_check ("demo_esp_boxes",   m_demo_esp_boxes);
+    mc_check ("demo_esp_names",   m_demo_esp_names);
+    mc_check ("demo_esp_health",  m_demo_esp_health);
+    mc_slider("demo_max_distance", m_demo_max_distance, 0, 500, 10);
+    mc_combo ("demo_box_style",   m_demo_box_style, "Corners,Full,Filled");
+    mc_check ("demo_force_write",  m_demo_force_write, true);   // danger: needs ARM
+}
+
+void handle_ui_list(const string &in id)
+{
+    string rows = "";
+    for (uint i = 0; i < g_mc.length(); i++)
+    {
+        McCtl@ u = g_mc[i];
+        if (i > 0) rows += ",";
+        rows += "{\"name\":\"" + json_escape(u.name) + "\",\"kind\":\"" + mc_kind_name(u.kind)
+              + "\",\"value\":" + mc_value_json(u)
+              + ",\"writable\":true,\"danger\":" + (u.danger ? "true" : "false");
+        if (u.kind == MC_SLIDER) rows += ",\"min\":" + u.mn + ",\"max\":" + u.mx + ",\"step\":" + u.st;
+        if (u.kind == MC_COMBO)
+        {
+            rows += ",\"options\":[";
+            for (uint k = 0; k < u.options.length(); k++)
+                rows += (k > 0 ? "," : "") + "\"" + json_escape(u.options[k]) + "\"";
+            rows += "]";
+        }
+        rows += "}";
+    }
+    ws::send("{\"type\":\"ui_list_result\",\"id\":" + id + ",\"success\":true,\"armed\":"
+             + (g_mc_armed.load() ? "true" : "false") + ",\"count\":" + g_mc.length()
+             + ",\"results\":[" + rows + "]}");
+}
+void handle_ui_get(const string &in frame, const string &in id)
+{
+    string name = json_str(frame, "name", "");
+    int i = mc_find(name);
+    if (i < 0) { send_error(id, 1002, "unknown control: " + name); return; }
+    McCtl@ u = g_mc[uint(i)];
+    ws::send("{\"type\":\"ui_get_result\",\"id\":" + id + ",\"success\":true,\"name\":\""
+             + json_escape(name) + "\",\"kind\":\"" + mc_kind_name(u.kind)
+             + "\",\"value\":" + mc_value_json(u) + "}");
+}
+void handle_ui_set(const string &in frame, const string &in id)
+{
+    string name = json_str(frame, "name", "");
+    int i = mc_find(name);
+    if (i < 0) { send_error(id, 1002, "unknown control: " + name); return; }
+    McCtl@ u = g_mc[uint(i)];
+    if (u.danger && !g_mc_armed.load())
+    { send_error(id, 1024, "danger control disarmed: " + name + " (click 'Menu Control: ARM' in the overlay)"); return; }
+    if (!json_has(frame, "value")) { send_error(id, 1002, "missing value"); return; }
+
+    McSetReq r; r.id = id; r.idx = i;
+    if (u.kind == MC_CHECK)
+    {
+        // accept bare true/false, quoted "true"/"1", or numeric 1/0
+        string v = json_str(frame, "value", "");
+        if (v != "") r.bval = (v == "true" || v == "1");
+        else r.bval = mc_json_bool(frame, "value", false) || int(json_num(frame, "value", 0)) != 0;
+    }
+    else
+    {
+        int v = int(json_num(frame, "value", 0));
+        if (u.kind == MC_SLIDER) { if (v < u.mn) v = u.mn; if (v > u.mx) v = u.mx; }
+        else { int oc = int(u.options.length()); if (v < 0) v = 0; if (oc > 0 && v >= oc) v = oc - 1; }
+        r.ival = v;
+    }
+    g_mc_qmtx.lock();
+    g_mc_q.insertLast(r);
+    g_mc_qmtx.unlock();
+}
+
+// Render-thread: drain queued sets, apply through the stored handle, echo the applied value.
+// Registered as the host render callback via on_render(@mc_render_tick) in main().
+void mc_render_tick()
+{
+    g_mc_qmtx.lock();
+    if (g_mc_q.length() == 0) { g_mc_qmtx.unlock(); return; }
+    array<McSetReq> batch = g_mc_q;
+    g_mc_q.resize(0);
+    g_mc_qmtx.unlock();
+
+    for (uint i = 0; i < batch.length(); i++)
+    {
+        McSetReq@ r = batch[i];
+        if (r.idx < 0 || r.idx >= int(g_mc.length())) continue;
+        McCtl@ u = g_mc[uint(r.idx)];
+        if      (u.kind == MC_CHECK)  ui::set(u.cb, r.bval);
+        else if (u.kind == MC_SLIDER) ui::set(u.sl, r.ival);
+        else if (u.kind == MC_COMBO)  ui::set(u.co, r.ival);
+        string applied = (u.kind == MC_CHECK) ? (r.bval ? "true" : "false") : ("" + r.ival);
+        ws::send("{\"type\":\"ui_set_result\",\"id\":" + r.id + ",\"success\":true,\"name\":\""
+                 + json_escape(u.name) + "\",\"kind\":\"" + mc_kind_name(u.kind)
+                 + "\",\"value\":" + applied + "}");
+    }
+}
+
+void mc_on_arm_click()
+{
+    g_mc_armed.store(true);
+    notify("Menu Control: danger controls ARMED", 255, 110, 40);
+}
+void mc_on_disarm_click()
+{
+    g_mc_armed.store(false);
+    notify("Menu Control: danger controls disarmed", 200, 200, 200);
+}
+
 // --- capability handshake ----------------------------------------------------
 // Report this agent's protocol version and the exact verb list it dispatches, so the frontend can
 // negotiate capability availability from fact rather than assumption. Keep this list identical to
@@ -1628,7 +1821,7 @@ void handle_capabilities(const string &in frame, const string &in id)
     string verbs = "\"write\",\"dump\",\"exports\",\"imports\",\"iat_rebuild\",\"sections\"," +
                    "\"regions\",\"pe_header\",\"pe_dirs\",\"resource_tree\"," +
                    "\"scan_new\",\"scan_filter\",\"scan_clear\",\"scan_grouped\",\"raw_scan\"," +
-                   "\"emulate\",\"capabilities\"";
+                   "\"emulate\",\"ui_list\",\"ui_get\",\"ui_set\",\"capabilities\"";
     ws::send("{\"type\":\"capabilities_result\",\"id\":" + id +
              ",\"success\":true,\"protocol_version\":" + EXT_PROTOCOL_VERSION +
              ",\"verbs\":[" + verbs + "]}");
@@ -1663,6 +1856,9 @@ void on_ws_message(const string &in msg)
     else if (type == "scan_grouped") handle_scan_grouped(msg, id);
     else if (type == "raw_scan") handle_raw_scan(msg, id);
     else if (type == "emulate") handle_emulate(msg, id);
+    else if (type == "ui_list") handle_ui_list(id);
+    else if (type == "ui_get") handle_ui_get(msg, id);
+    else if (type == "ui_set") handle_ui_set(msg, id);
     else if (type == "capabilities") handle_capabilities(msg, id);
     else send_error(id, 1000, "unknown ext verb: " + type);
 }
@@ -1705,6 +1901,20 @@ bool main()
     ui::add_category("Ext agent");
     ui::add_button("Connect /agent-ext", @on_connect_click);
     ui::add_button("Disconnect", @on_disconnect_click);
+
+    // Menu-control demo surface: real controls the ui_list / ui_get / ui_set lane enumerates and
+    // toggles from the web-mv frontend (or any MCP client). The registry is built from these handles.
+    ui::add_category("Menu Control (demo)");
+    m_demo_esp_boxes    = ui::add_checkbox("Demo: ESP boxes", false);
+    m_demo_esp_names    = ui::add_checkbox("Demo: ESP names", false);
+    m_demo_esp_health   = ui::add_checkbox("Demo: ESP health", false);
+    m_demo_max_distance = ui::add_slider("Demo: max distance", 100, 0, 500, 10);
+    m_demo_box_style    = ui::add_combobox("Demo: box style", {"Corners", "Full", "Filled"}, 0);
+    m_demo_force_write  = ui::add_checkbox("Demo: force write (danger)", false);
+    ui::add_button("Menu Control: ARM danger controls (DANGEROUS)", @mc_on_arm_click);
+    ui::add_button("Menu Control: Disarm danger controls", @mc_on_disarm_click);
+    mc_build_registry();
+    on_render(@mc_render_tick);   // drains queued ui_set requests on the render thread
 
     connect_relay();
     return true;

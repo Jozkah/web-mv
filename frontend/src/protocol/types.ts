@@ -148,6 +148,18 @@ export interface ScanGroupedRequest {
 
 export type CapabilitiesRequest = Record<string, never>;
 
+// --- Menu control (ui_list / ui_get / ui_set). Routed to /agent-ext by the relay. ------
+
+export interface UiGetRequest {
+    name: string;
+}
+
+export interface UiSetRequest {
+    name: string;
+    /** boolean for a check control; integer for slider/combo (combo = selected option index). */
+    value: boolean | number;
+}
+
 // Emulator: one `emulate` verb, op-dispatched. The payload beyond {op} varies by op; flat CSV
 // encodings (reg_names/reg_values/breakpoints) avoid nested JSON in the AngelScript agent.
 export interface EmulateRequest {
@@ -194,6 +206,10 @@ export type PeDirsResult = z.infer<typeof s.peDirsResult>;
 export type ResourceTreeResult = z.infer<typeof s.resourceTreeResult>;
 export type CapabilitiesResult = z.infer<typeof s.capabilitiesResult>;
 export type EmulateResult = z.infer<typeof s.emulateResult>;
+export type UiControl = z.infer<typeof s.uiControl>;
+export type UiListResult = z.infer<typeof s.uiListResult>;
+export type UiGetResult = z.infer<typeof s.uiGetResult>;
+export type UiSetResult = z.infer<typeof s.uiSetResult>;
 export type EmuTraceEntry = NonNullable<EmulateResult["trace"]>[number];
 export type PeDirEntry = PeDirsResult["results"][number];
 export type ExportEntry = ExportsResult["results"][number];

@@ -24,6 +24,7 @@ import { createTargetSession } from "../state/targetSession";
 import { createWatchStore } from "../state/watchStore";
 import { createEmulatorStore } from "../state/emulatorStore";
 import { createPatchStore } from "../state/patchStore";
+import { createMenuControlStore } from "../state/menuControlStore";
 import { createProjectStore } from "../state/projectStore";
 import { createGhidraConfig } from "../state/ghidraConfig";
 import { createDecompilerStore } from "../state/decompilerStore";
@@ -214,6 +215,10 @@ function createAppState() {
         targetSession,
     });
 
+    // Menu control: enumerate/toggle the ext agent's own overlay controls via the ui_list/ui_get/
+    // ui_set lane. Gated on the negotiated menu.control capability; not tied to a target process.
+    const menuControl = createMenuControlStore({ client, capabilities });
+
     const sidecarOrigin = `${location.protocol}//${location.host}`;
 
     // Optional tshark PCAP sidecar — OFFLINE analysis of a capture file the user already has. It never
@@ -295,6 +300,7 @@ function createAppState() {
         watches,
         emulator,
         patches,
+        menuControl,
         project,
         ghidra,
         decompiler,

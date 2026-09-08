@@ -1,0 +1,67 @@
+/* Menu Control — specific to the toggle/slider/combo row layout and the danger/armed badges.
+   Reuses .panel / .panel-head / .panel-body / .list / .row from ui/panels.css for the shell. */
+
+.mc-view { flex: 1 1 auto; min-height: 0; min-width: 0; }
+.mc-body { flex-direction: column; overflow: auto; }
+
+.mc-armed { font-weight: 700; letter-spacing: 0.03em; }
+.mc-armed.on { color: var(--danger); }
+.mc-armed.off { color: var(--text-dim); }
+
+.mc-error { white-space: normal; }
+
+.mc-list { flex: 1 1 auto; }
+
+.mc-row {
+    display: grid;
+    grid-template-columns: minmax(140px, 1.4fr) 64px minmax(140px, 1fr) 1fr;
+    align-items: center;
+    gap: 10px;
+    cursor: default;
+    white-space: normal;
+}
+.mc-row:hover { background: none; }
+.mc-row.danger { box-shadow: inset 2px 0 0 var(--warn); }
+.mc-row.locked { opacity: 0.75; }
+
+.mc-name { display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; }
+.mc-kind { text-transform: uppercase; font-size: 11px; letter-spacing: 0.04em; }
+
+.mc-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    flex: 0 0 auto;
+}
+.mc-badge.danger { color: var(--danger, #e46a62); border-color: var(--danger, #e46a62); }
+
+.mc-control { display: flex; align-items: center; gap: 8px; }
+
+.mc-slider { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }
+.mc-slider input[type="range"] { flex: 1 1 auto; min-width: 80px; }
+.mc-num { width: 64px; padding: 2px 5px; background: var(--surface-4); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-h); font-family: var(--mono); font-size: 12px; }
+
+.mc-row select {
+    background: var(--surface-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-h);
+    font: inherit;
+    font-size: 12px;
+    padding: 3px 6px;
+}
+
+.mc-hint { grid-column: 1 / -1; color: var(--warn); font-size: 11.5px; }
+
+.mc-note {
+    margin: 10px 12px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-soft);
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+}

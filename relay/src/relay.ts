@@ -21,6 +21,8 @@ export interface SocketData {
 // relay endpoint. Routing by verb here keeps the proven read/scan/disassemble path untouched while
 // adding mutation support. Keep this in sync with web_mv_ext_agent.as's dispatch — a mismatch means
 // a verb silently times out on the wrong socket.
+// Includes the menu-control lane (ui_list/ui_get/ui_set) that exposes the ext agent's own overlay
+// controls to the browser.
 const EXT_VERBS = new Set<string>([
     "write",
     "dump",
@@ -41,6 +43,10 @@ const EXT_VERBS = new Set<string>([
     "emulate",
     // Capability handshake: the ext agent is the source of truth for which verbs it implements.
     "capabilities",
+    // Menu control: enumerate/get/set the ext agent's own overlay controls (checkbox/slider/combo).
+    "ui_list",
+    "ui_get",
+    "ui_set",
 ]);
 
 function frameType(message: string | Buffer): string | undefined {

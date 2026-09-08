@@ -162,3 +162,17 @@ export function capabilities(client: AxClient): Promise<t.CapabilitiesResult> {
 export function emulate(client: AxClient, req: t.EmulateRequest, timeoutMs?: number): Promise<t.EmulateResult> {
     return client.request(RequestType.Emulate, { ...req }, schemas.emulateResult, timeoutMs);
 }
+
+// --- Menu control (ui_list / ui_get / ui_set). Routed to /agent-ext by the relay. ------------
+
+export function uiList(client: AxClient): Promise<t.UiListResult> {
+    return client.request(RequestType.UiList, {}, schemas.uiListResult);
+}
+
+export function uiGet(client: AxClient, req: t.UiGetRequest): Promise<t.UiGetResult> {
+    return client.request(RequestType.UiGet, { ...req }, schemas.uiGetResult);
+}
+
+export function uiSet(client: AxClient, req: t.UiSetRequest): Promise<t.UiSetResult> {
+    return client.request(RequestType.UiSet, { ...req }, schemas.uiSetResult);
+}

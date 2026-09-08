@@ -33,6 +33,7 @@ export const SECONDARY_KINDS: TabKindMeta[] = [
     { kind: "watch", label: "Memory Watch", description: "Poll addresses and track value changes over time" },
     { kind: "patch", label: "Patches", description: "Raw-byte patches with always-reversible originals" },
     { kind: "emulator", label: "Emulator", description: "Offline Unicorn emulation, registers and instruction trace" },
+    { kind: "menu", label: "Menu Control", description: "Toggle the connected agent's menu features" },
     { kind: "timeline", label: "Timeline", description: "Unified event timeline across all evidence" },
     { kind: "project", label: "Project", description: "Export / import / compare the whole per-target workspace" },
 ];

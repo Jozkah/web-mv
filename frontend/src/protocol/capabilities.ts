@@ -51,7 +51,8 @@ export type CapabilityId =
     | "patch.rawBytes"
     | "patch.assemble"
     | "patch.allocate"
-    | "project.persist";
+    | "project.persist"
+    | "menu.control";
 
 // How a capability's availability is decided during negotiation.
 type Backing =
@@ -139,6 +140,14 @@ export const CAPABILITY_SPECS: readonly CapabilitySpec[] = [
         backing: { kind: "ext", verb: "emulate" },
         missingPrimitive: "ext agent verb: emulate (Angel uc:: primitive exists; no verb wired yet)",
         reason: "Angel exposes the Unicorn primitive (uc::), but no emulation verb is wired in the agent yet. This is an emulator, never a live debugger.",
+    },
+    {
+        id: "menu.control",
+        title: "Menu control",
+        level: "extension-agent",
+        backing: { kind: "ext", verb: "ui_list" },
+        missingPrimitive: "ext agent verb: ui_list/ui_get/ui_set",
+        reason: "The companion extension agent is not connected, or does not advertise the menu-control verb lane.",
     },
     {
         id: "scan.value",

@@ -22,6 +22,7 @@ import { TimelineView } from "../views/timeline/TimelineView";
 import { MemoryWatchView } from "../views/watch/MemoryWatchView";
 import { EmulatorView } from "../views/emulator/EmulatorView";
 import { PatchView } from "../views/patch/PatchView";
+import { MenuControlView } from "../views/menu/MenuControlView";
 import { ProjectView } from "../views/project/ProjectView";
 import { DebuggerView, HookLabView } from "../views/sidecar/UnavailableViews";
 import { DecompilerView } from "../views/decompiler/DecompilerView";
@@ -179,6 +180,9 @@ function TabContent(props: { tab: TabItem; focused: boolean }) {
             </Match>
             <Match when={tab.kind === "patch"}>
                 <PatchView />
+            </Match>
+            <Match when={tab.kind === "menu"}>
+                <MenuControlView />
             </Match>
             <Match when={tab.kind === "project"}>
                 <ProjectView />

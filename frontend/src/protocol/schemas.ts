@@ -420,6 +420,51 @@ export const capabilitiesResult = z.object({
     verbs: z.array(z.string()),
 });
 
+// Menu control (ui_list / ui_get / ui_set): enumerate/read/write the ext agent's own overlay
+// controls. check.value is boolean; slider/combo.value is an integer (combo = selected option
+// index). writable is always true today; danger controls are refused by ui_set until the operator
+// arms them in the overlay (error code 1024).
+export const uiControl = z.object({
+    name: z.string(),
+    kind: z.enum(["check", "slider", "combo"]),
+    value: z.union([z.boolean(), z.number()]),
+    writable: z.boolean(),
+    danger: z.boolean(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    step: z.number().optional(),
+    options: z.array(z.string()).optional(),
+});
+
+export const uiListResult = z.object({
+    type: z.literal(ResponseType.UiList),
+    id: z.number().int(),
+    success: z.boolean(),
+    armed: z.boolean(),
+    count: z.number().int(),
+    results: z.array(uiControl),
+});
+
+export const uiGetResult = z.object({
+    type: z.literal(ResponseType.UiGet),
+    id: z.number().int(),
+    success: z.boolean(),
+    name: z.string(),
+    kind: z.enum(["check", "slider", "combo"]),
+    value: z.union([z.boolean(), z.number()]),
+});
+
+// value is the APPLIED value (echoed back after the render-thread write) — never assume the
+// requested value took effect verbatim (sliders clamp, combos clamp to a valid option index).
+export const uiSetResult = z.object({
+    type: z.literal(ResponseType.UiSet),
+    id: z.number().int(),
+    success: z.boolean(),
+    name: z.string(),
+    kind: z.enum(["check", "slider", "combo"]),
+    value: z.union([z.boolean(), z.number()]),
+});
+
 // Discriminated union of every non-error response, for callers that want to parse
 // a frame without knowing its type up front. AxClient validates against the specific
 // per-request schema instead, but this is here for completeness/tooling.
@@ -453,4 +498,7 @@ export const responseSchema = z.discriminatedUnion("type", [
     resourceTreeResult,
     emulateResult,
     capabilitiesResult,
+    uiListResult,
+    uiGetResult,
+    uiSetResult,
 ]);
