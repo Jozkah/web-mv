@@ -188,6 +188,44 @@ curl -X POST http://127.0.0.1:9000/rpc \
 * `exports` / `imports` — Walk PE export/import directories
 * `sections` / `pe_header` / `pe_dirs` / `resource_tree` — PE structure inspection
 * `scan_grouped` — Grouped scan results
+* `ui_list` / `ui_get` / `ui_set` — Menu Control: enumerate and toggle the agent's own menu controls (drives the **Menu Control** tab)
+
+---
+
+## Phone / LAN access
+
+The relay serves the whole UI on one port, and the browser reaches the WebSocket via the same host
+it loaded from — so opening the relay from your phone needs **no rebuild**, only a wider bind.
+
+1. Start the relay with `HOST=0.0.0.0`:
+
+   ```sh
+   # PowerShell
+   $env:HOST="0.0.0.0"; <your relay start command>
+   # bash
+   HOST=0.0.0.0 <your relay start command>
+   ```
+
+   (`PORT` is also configurable; it defaults to `9000`.)
+
+2. On the phone — **same Wi-Fi/LAN** — open `http://<your-PC-LAN-IP>:9000` (e.g. `http://192.168.1.20:9000`).
+   Find the PC's LAN IP with `ipconfig` (Windows) / `ip addr` (Linux).
+3. The overlay agent still connects to `ws://127.0.0.1:9000/agent-ext` — it runs on the same PC as the
+   relay, so that address is unchanged. Only the browser side goes over the LAN.
+
+Then open the **Menu Control** tab on the phone to toggle features live.
+
+### Safety
+
+* **No authentication.** The relay is a control channel into a process's memory. Bind beyond
+  loopback **only on a trusted network**, and never expose the port to the internet directly. For
+  remote access, put it behind a TLS reverse proxy (Caddy/nginx) that adds auth, or a private
+  network overlay (Tailscale/WireGuard) — then the browser reaches it over `https`/`wss`.
+* **Danger controls still require a live PC-side ARM click.** Controls that write game memory
+  (aim, chams, no-recoil, …) refuse `ui_set` until the operator clicks *"Menu Control: ARM danger
+  controls"* in the overlay. That gate is intentional and cannot be armed from the phone — the
+  phone can freely flip overlay-only visuals, but a person at the PC must arm anything that touches
+  the game process.
 
 ---
 

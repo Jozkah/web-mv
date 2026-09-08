@@ -3,8 +3,11 @@ import { activeAgentCount, agentConnected, callAgent, extConnected, handlers, no
 import { analyze as ghidraAnalyze, decompile as ghidraDecompile, probe as ghidraProbe, type AnalyzeJob, type DecompileJob, type GhidraConfig } from "./ghidra";
 import { analyze as tsharkAnalyze, probeRun as tsharkProbeRun, type AnalyzeJob as TsharkJob, type TsharkConfig } from "./tshark";
 
-// Local control channel into a process's memory - never bind to anything but loopback.
-const HOSTNAME = "127.0.0.1";
+// Local control channel into a process's memory. Defaults to loopback. Set HOST to bind wider
+// (HOST=0.0.0.0 to reach the UI from a phone/other device on the LAN) — see README "Phone / LAN
+// access". There is NO auth on the relay: only bind beyond loopback on a trusted network, never
+// expose the port to the internet without a TLS reverse proxy that adds authentication.
+const HOSTNAME = process.env.HOST ?? "127.0.0.1";
 const PORT = Number(process.env.PORT ?? 9000);
 
 // Ceiling for a single POST /rpc call. Generous so a slow point read or a single-threaded
@@ -225,4 +228,8 @@ const server = Bun.serve({
 console.log(`running at: http://${server.hostname}:${server.port}  (open this in a browser)`);
 console.log(`agent runs at: ws://localhost:${server.port}/agent`);
 console.log(`rpc runs at:   POST http://${server.hostname}:${server.port}/rpc  (many concurrent callers)`);
+if (HOSTNAME !== "127.0.0.1" && HOSTNAME !== "localhost") {
+    console.log(`LAN access: bound to ${HOSTNAME} — open http://<this-PC-LAN-IP>:${server.port} on another device.`);
+    console.log(`WARNING: the relay has NO authentication. Trusted LAN only; never expose this port to the internet.`);
+}
 
